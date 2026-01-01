@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Properties</title>
+  <link rel="stylesheet" href="./css/styles.css" />
+</head>
+<body>
+  <main class="container">
+    <h1>חיפוש נכסים</h1>
+
+    <form id="filtersForm" class="filters">
+      <input name="q" placeholder="חיפוש חופשי..." />
+
+      <select name="city">
+        <option value="">כל הערים</option>
+        <!-- אופציונלי: למלא דינמית -->
+      </select>
+
+      <select name="type">
+        <option value="">כל הסוגים</option>
+        <option value="apartment">דירה</option>
+        <option value="house">בית</option>
+      </select>
+
+      <select name="status">
+        <option value="">כל הסטטוסים</option>
+        <option value="for-sale">למכירה</option>
+        <option value="for-rent">להשכרה</option>
+      </select>
+
+      <input name="minPrice" type="number" min="0" placeholder="מחיר מינ׳" />
+      <input name="maxPrice" type="number" min="0" placeholder="מחיר מקס׳" />
+
+      <button type="submit">חפש</button>
+      <button type="button" id="resetBtn">איפוס</button>
+    </form>
+
+    <section class="status">
+      <div id="loading" hidden>טוען...</div>
+      <div id="error" class="error" hidden></div>
+      <div id="meta" class="meta"></div>
+    </section>
+
+    <section id="results" class="grid"></section>
+  </main>
+
+  <script type="module" src="./js/main.js"></script>
+</body>
+</html>

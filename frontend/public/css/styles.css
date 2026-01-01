@@ -1,0 +1,15 @@
+/* public/css/styles.css */
+.container { max-width: 980px; margin: 0 auto; padding: 16px; font-family: system-ui, Arial; }
+.filters { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; align-items: center; }
+.filters input, .filters select, .filters button { padding: 10px; }
+.filters button { cursor: pointer; }
+.status { margin: 12px 0; }
+.error { padding: 10px; border: 1px solid #c00; }
+.grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+.card { border: 1px solid #ddd; padding: 12px; border-radius: 12px; }
+.price { margin-top: 8px; font-weight: 700; }
+.empty { padding: 18px; border: 1px dashed #999; border-radius: 12px; text-align: center; }
+@media (max-width: 800px) {
+  .filters { grid-template-columns: repeat(2, 1fr); }
+  .grid { grid-template-columns: 1fr; }
+}
