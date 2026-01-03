@@ -1,65 +1,85 @@
 // public/js/main.js
 import { fetchProperties } from "./api.js";
-import { setLoading, showError, clearError, renderProperties, setMeta } from "./ui.js";
+import {
+  setLoading,
+  showError,
+  clearError,
+  setMetaText,
+  setMessage,
+  renderResults,
+  fillSelect,
+} from "./ui.js";
 
-const form = document.getElementById("filtersForm");
-const resetBtn = document.getElementById("resetBtn");
+function uniqSorted(arr) {
+  return Array.from(new Set(arr.filter(Boolean))).sort((a, b) =>
+    String(a).localeCompare(String(b), "he")
+  );
+}
 
-let currentController = null;
-
-form.addEventListener("submit", async (e) => {
-  e.preventDefault();
-  await runSearch();
-});
-
-resetBtn.addEventListener("click", async () => {
-  form.reset();
-  await runSearch();
-});
-
-async function runSearch() {
+async function loadAndRender(params = {}) {
   clearError();
-  setMeta("");
+  setMessage("");
   setLoading(true);
 
-  // מבטל בקשה קודמת אם המשתמש לחץ שוב מהר
-  if (currentController) currentController.abort();
-  currentController = new AbortController();
-
-  const params = getFormParams(form);
-
   try {
-    const data = await fetchProperties(params, currentController.signal);
+    const res = await fetchProperties(params);
 
-    // התאמה לפורמט תגובה שלך:
-    // אם השרת מחזיר { status: "OK", data: [...] } או משהו אחר — תעדכן כאן
-    const items = data?.data ?? data?.items ?? data;
-    renderProperties(items);
+    const total = res?.meta?.total ?? 0;
+    const count = res?.count ?? 0;
+    setMetaText(`נמצאו ${total} רשומות · מוצג: ${count}`);
 
-    const count = Array.isArray(items) ? items.length : 0;
-    setMeta(`נמצאו ${count} תוצאות`);
-  } catch (err) {
-    if (err.name === "AbortError") return;
-    showError(err.message || "שגיאה לא צפויה");
+    renderResults(res.data || []);
+  } catch (e) {
+    showError(e.message || "שגיאה");
   } finally {
     setLoading(false);
   }
 }
 
-function getFormParams(formEl) {
-  const fd = new FormData(formEl);
+async function initFilters() {
+  // נטען דוגמית גדולה כדי למלא select של ערים/סוגים
+  const res = await fetchProperties({ limit: 100 });
+  const data = res.data || [];
 
-  // חשוב: השמות כאן חייבים להתאים ל-query שה־Backend שלך מצפה לו:
-  // city, type, status, q, minPrice, maxPrice
-  return {
-    q: fd.get("q"),
-    city: fd.get("city"),
-    type: fd.get("type"),
-    status: fd.get("status"),
-    minPrice: fd.get("minPrice"),
-    maxPrice: fd.get("maxPrice"),
-  };
+  const cities = uniqSorted(data.map((x) => x.city));
+  const types = uniqSorted(data.map((x) => x.type));
+
+  fillSelect("city", cities, "כל הערים");
+  fillSelect("type", types, "כל הסוגים");
 }
 
-// הרצה ראשונה כשנטען הדף
-runSearch();
+function getFilterParamsFromUI() {
+  const q = document.getElementById("q").value.trim();
+  const city = document.getElementById("city").value.trim();
+  const type = document.getElementById("type").value.trim();
+
+  // optional: add these inputs later if you want
+  // const minPrice = document.getElementById("minPrice")?.value?.trim();
+  // const maxPrice = document.getElementById("maxPrice")?.value?.trim();
+
+  return { q, city, type, limit: 10, page: 1 };
+}
+
+document.getElementById("filtersForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  await loadAndRender(getFilterParamsFromUI());
+});
+
+document.getElementById("resetBtn").addEventListener("click", async () => {
+  document.getElementById("q").value = "";
+  document.getElementById("city").value = "";
+  document.getElementById("type").value = "";
+  await loadAndRender({ limit: 10, page: 1 });
+});
+
+(async function boot() {
+  setLoading(true);
+  try {
+    await initFilters();
+    await loadAndRender({ limit: 10, page: 1 });
+  } catch (e) {
+    showError(e.message || "שגיאה");
+  } finally {
+    setLoading(false);
+  }
+})();
