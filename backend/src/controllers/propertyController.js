@@ -1,144 +1,140 @@
-const Property = require("../models/Property");
-const asyncHandler = require("../utils/asyncHandler");
+// backend/src/controllers/propertyCkanController.js
 
-// GET /api/properties
-// Query params supported:
-// city, type, status, q, minPrice, maxPrice, page, limit, sort
-// Examples:
-// /api/properties?city=Haifa&type=apartment&minPrice=500000&maxPrice=2000000&q=דירה&page=1&limit=10&sort=-createdAt
-// /api/properties?sort=-price
-exports.getProperties = async (req, res) => {
+const CKAN_BASE = process.env.CKAN_BASE;
+const CKAN_RID = process.env.CKAN_RID;
+
+function toInt(v, def) {
+  const n = Number(v);
+  return Number.isFinite(n) ? n : def;
+}
+
+// Cache קטן בזיכרון כדי לא להפציץ את CKAN
+const CACHE_TTL_MS = 30_000;
+const cache = new Map(); // key -> { expiresAt, payload }
+
+function cacheGet(key) {
+  const item = cache.get(key);
+  if (!item) return null;
+  if (Date.now() > item.expiresAt) {
+    cache.delete(key);
+    return null;
+  }
+  return item.payload;
+}
+function cacheSet(key, payload) {
+  cache.set(key, { expiresAt: Date.now() + CACHE_TTL_MS, payload });
+}
+
+function placeholderImage({ city = "Israel", type = "property" }) {
+  return `https://source.unsplash.com/featured/800x600?real-estate,${encodeURIComponent(
+    city
+  )},${encodeURIComponent(type)}`;
+}
+
+function normalizeRecord(rec) {
+  const title = rec.title || rec.Title || rec.name || "נכס";
+  const city = rec.city || rec.City || rec.yishuv || rec["יישוב"] || "Israel";
+  const type = (rec.type || rec.Type || "apartment").toString().toLowerCase();
+
+  const priceRaw = rec.price || rec.Price || rec.sum || rec["מחיר"] || 0;
+  const price = Number(String(priceRaw).replace(/[,₪]/g, "")) || 0;
+
+  const img =
+    rec.imageUrl ||
+    rec.image ||
+    rec.ImageURL ||
+    placeholderImage({ city, type });
+
+  return {
+    _id: String(rec._id || rec.id || `${title}-${city}-${price}`),
+    title,
+    description: rec.description || "",
+    price,
+    currency: "ILS",
+    address: rec.address || "",
+    city,
+    country: "Israel",
+    bedrooms: Number(rec.bedrooms || 0),
+    bathrooms: Number(rec.bathrooms || 0),
+    type,
+    listingStatus: (rec.listingStatus || "for-sale").toString().toLowerCase(),
+    images: [img],
+    isPublished: true,
+    createdAt: rec.createdAt || new Date().toISOString(),
+    updatedAt: rec.updatedAt || new Date().toISOString(),
+  };
+}
+
+// GET /api/properties  (CKAN)
+exports.getPropertiesCkan = async (req, res) => {
   try {
-    const {
-      city,
-      type,
-      status,
-      q,
-      minPrice,
-      maxPrice,
-      page = "1",
-      limit = "10",
-      sort = "-createdAt",
-    } = req.query;
-
-    const filter = {};
-
-    // basic filters
-    if (city) filter.city = city;
-    if (type) filter.type = type;
-    if (status) filter.listingStatus = status;
-
-    // price range validation + filter
-    const min = minPrice !== undefined ? Number(minPrice) : undefined;
-    const max = maxPrice !== undefined ? Number(maxPrice) : undefined;
-
-    if (minPrice !== undefined && Number.isNaN(min)) {
-      return res
-        .status(400)
-        .json({ status: "ERROR", message: "minPrice must be a number" });
-    }
-    if (maxPrice !== undefined && Number.isNaN(max)) {
-      return res
-        .status(400)
-        .json({ status: "ERROR", message: "maxPrice must be a number" });
+    if (!CKAN_BASE || !CKAN_RID) {
+      return res.status(500).json({
+        status: "ERROR",
+        message: "Missing CKAN_BASE or CKAN_RID in .env",
+      });
     }
 
-    if (min !== undefined || max !== undefined) {
-      filter.price = {};
-      if (min !== undefined) filter.price.$gte = min;
-      if (max !== undefined) filter.price.$lte = max;
+    const page = Math.max(1, toInt(req.query.page, 1));
+    const limit = Math.min(100, Math.max(1, toInt(req.query.limit, 10)));
+    const offset = (page - 1) * limit;
+
+    const q = (req.query.q || "").toString().trim().toLowerCase();
+    const city = (req.query.city || "").toString().trim().toLowerCase();
+    const type = (req.query.type || "").toString().trim().toLowerCase();
+
+    const minPrice =
+      req.query.minPrice !== undefined ? toInt(req.query.minPrice, undefined) : undefined;
+    const maxPrice =
+      req.query.maxPrice !== undefined ? toInt(req.query.maxPrice, undefined) : undefined;
+
+    const cacheKey = JSON.stringify({ page, limit, q, city, type, minPrice, maxPrice });
+    const cached = cacheGet(cacheKey);
+    if (cached) return res.json(cached);
+
+    // CKAN datastore_search: limit + offset + resource_id
+    const url = new URL(`${CKAN_BASE}/datastore_search`);
+    url.searchParams.set("resource_id", CKAN_RID);
+    url.searchParams.set("limit", String(limit));
+    url.searchParams.set("offset", String(offset));
+
+    const r = await fetch(url);
+    if (!r.ok) {
+      return res.status(502).json({ status: "ERROR", message: `CKAN HTTP ${r.status}` });
+    }
+    const json = await r.json();
+    if (!json.success) {
+      return res.status(502).json({ status: "ERROR", message: "CKAN success=false" });
     }
 
-    // simple text search (regex)
-    if (q) {
-      filter.$or = [
-        { title: { $regex: q, $options: "i" } },
-        { description: { $regex: q, $options: "i" } },
-      ];
-    }
+    const total = Number(json.result.total || 0);
+    let records = (json.result.records || []).map(normalizeRecord);
 
-    // pagination
-    const pageNum = Math.max(Number(page) || 1, 1);
-    const limitNum = Math.min(Math.max(Number(limit) || 10, 1), 100);
-    const skip = (pageNum - 1) * limitNum;
+    // פילטרים מקומיים (מינימליים) כדי שה-UI יעבוד
+    if (q) records = records.filter((p) => (p.title || "").toLowerCase().includes(q));
+    if (city) records = records.filter((p) => (p.city || "").toLowerCase() === city);
+    if (type) records = records.filter((p) => (p.type || "").toLowerCase() === type);
+    if (minPrice !== undefined) records = records.filter((p) => Number(p.price) >= minPrice);
+    if (maxPrice !== undefined) records = records.filter((p) => Number(p.price) <= maxPrice);
 
-    // query + count in parallel
-    const [items, total] = await Promise.all([
-      Property.find(filter).sort(sort).skip(skip).limit(limitNum),
-      Property.countDocuments(filter),
-    ]);
-
-    return res.json({
+    const payload = {
       status: "OK",
       meta: {
-        page: pageNum,
-        limit: limitNum,
+        page,
+        limit,
         total,
-        pages: Math.ceil(total / limitNum),
-        sort,
-        filter,
+        pages: Math.ceil(total / limit),
+        sort: "-createdAt",
+        filter: {},
+        source: "CKAN",
       },
-      count: items.length,
-      data: items,
-    });
+      count: records.length,
+      data: records,
+    };
+
+    cacheSet(cacheKey, payload);
+    return res.json(payload);
   } catch (err) {
     return res.status(500).json({ status: "ERROR", message: err.message });
-  }
-};
-
-// GET /api/properties/:id
-exports.getPropertyById = asyncHandler(async (req, res) => {
-  const property = await Property.findById(req.params.id);
-  if (!property) {
-    const err = new Error("Property not found");
-    err.statusCode = 404;
-    throw err;
-  }
-  res.json({ status: "OK", data: property });
-});
-
-
-// POST /api/properties
-exports.createProperty = async (req, res) => {
-  try {
-    const created = await Property.create(req.body);
-    return res.status(201).json({ status: "OK", data: created });
-  } catch (err) {
-    return res.status(400).json({ status: "ERROR", message: err.message });
-  }
-};
-
-// PUT/PATCH /api/properties/:id
-exports.updateProperty = async (req, res) => {
-  try {
-    const updated = await Property.findByIdAndUpdate(req.params.id, req.body, {
-      new: true,
-      runValidators: true,
-    });
-
-    if (!updated) {
-      return res
-        .status(404)
-        .json({ status: "ERROR", message: "Property not found" });
-    }
-
-    return res.json({ status: "OK", data: updated });
-  } catch (err) {
-    return res.status(400).json({ status: "ERROR", message: err.message });
-  }
-};
-
-// DELETE /api/properties/:id
-exports.deleteProperty = async (req, res) => {
-  try {
-    const deleted = await Property.findByIdAndDelete(req.params.id);
-    if (!deleted) {
-      return res
-        .status(404)
-        .json({ status: "ERROR", message: "Property not found" });
-    }
-    return res.json({ status: "OK", message: "Deleted successfully", data: deleted });
-  } catch (err) {
-    return res.status(400).json({ status: "ERROR", message: err.message });
   }
 };

@@ -1,20 +1,9 @@
 const express = require("express");
 const router = express.Router();
 
-const {
-  getProperties,
-  getPropertyById,
-  createProperty,
-  updateProperty,
-  deleteProperty,
-} = require("../controllers/propertyController");
+const { getPropertiesCkan } = require("../controllers/propertyCkanController");
 
-router.get("/", getProperties);
-router.get("/:id", getPropertyById);
-router.post("/", createProperty);
-router.put("/:id", updateProperty);
-router.delete("/:id", deleteProperty);
-
-
+// GET /api/properties -> CKAN
+router.get("/", getPropertiesCkan);
 
 module.exports = router;

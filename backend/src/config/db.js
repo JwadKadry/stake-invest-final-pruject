@@ -1,15 +1,19 @@
 const mongoose = require("mongoose");
 
 async function connectDB() {
+  const uri = process.env.MONGO_URI;
+
+  if (!uri) {
+    throw new Error("MONGO_URI is missing in backend/.env");
+  }
+
   try {
-    if (!process.env.MONGO_URI) {
-      throw new Error("MONGO_URI is not defined in environment variables. Please create a .env file with MONGO_URI.");
-    }
-    const conn = await mongoose.connect(process.env.MONGO_URI);
-    console.log("MongoDB Connected:", conn.connection.host);
+    await mongoose.connect(uri);
+    console.log("MongoDB connected");
+    return mongoose.connection;
   } catch (err) {
-    console.error("MongoDB connection error:", err.message);
-    process.exit(1);
+    // חשוב: לזרוק החוצה כדי ש-server.js יחליט מה לעשות
+    throw new Error(`MongoDB connection failed: ${err.message}`);
   }
 }
 
