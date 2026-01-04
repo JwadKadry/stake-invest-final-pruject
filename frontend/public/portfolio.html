@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Stake • Portfolio</title>
+  <link rel="stylesheet" href="./css/styles.css" />
+  <link rel="stylesheet" href="./css/portfolio.css" />
+</head>
+<body>
+  <div class="wrap">
+    <div class="top">
+      <button class="pill" id="backBtn">חזרה</button>
+      <h1 class="title">Portfolio</h1>
+      <div></div>
+    </div>
+
+    <div class="panel">
+      <div class="controls">
+        <div class="left">
+          <input id="search" placeholder="חיפוש לפי נכס/עיר..." />
+          <select id="sort">
+            <option value="newest">מיון: חדש→ישן</option>
+            <option value="oldest">מיון: ישן→חדש</option>
+            <option value="amountDesc">מיון: סכום גבוה→נמוך</option>
+            <option value="amountAsc">מיון: סכום נמוך→גבוה</option>
+          </select>
+        </div>
+        <div class="right">
+          <button class="btn" id="refreshBtn">רענון</button>
+          <button class="btn danger" id="clearBtn">נקה הכל</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel" style="margin-top:12px">
+      <div class="controls" style="justify-content:flex-start;gap:12px">
+        <div class="kpiBox">
+          <div class="muted">סה״כ השקעות</div>
+          <div id="kpiCount" style="font-weight:800;font-size:18px">0</div>
+        </div>
+
+        <div class="kpiBox">
+          <div class="muted">סה״כ סכום מושקע</div>
+          <div id="kpiTotal" style="font-weight:800;font-size:18px">0 ₪</div>
+        </div>
+
+        <div class="kpiBox">
+          <div class="muted">נכסים ייחודיים</div>
+          <div id="kpiUnique" style="font-weight:800;font-size:18px">0</div>
+        </div>
+
+        <div class="kpiBox">
+          <div class="muted">ממוצע השקעה</div>
+          <div id="kpiAvg" style="font-weight:800;font-size:18px">0 ₪</div>
+        </div>
+
+        <div class="kpiBox">
+          <div class="muted">Top city</div>
+          <div id="kpiTopCity" style="font-weight:800;font-size:18px">—</div>
+        </div>
+      </div>
+    </div>
+
+    <div id="meta" class="muted" style="margin:8px 2px 12px"></div>
+
+    <div id="grid" class="grid"></div>
+    <div id="empty" class="empty" style="display:none">אין עדיין השקעות. בצע השקעה דרך Checkout (Demo).</div>
+  </div>
+
+  <script type="module" src="./js/portfolio.js"></script>
+</body>
+</html>
+

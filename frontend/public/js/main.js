@@ -7,14 +7,7 @@ import {
   setMetaText,
   setMessage,
   renderResults,
-  fillSelect,
 } from "./ui.js";
-
-function uniqSorted(arr) {
-  return Array.from(new Set(arr.filter(Boolean))).sort((a, b) =>
-    String(a).localeCompare(String(b), "he")
-  );
-}
 
 async function loadAndRender(params = {}) {
   clearError();
@@ -24,61 +17,72 @@ async function loadAndRender(params = {}) {
   try {
     const res = await fetchProperties(params);
 
-    const total = res?.meta?.total ?? 0;
-    const count = res?.count ?? 0;
-    setMetaText(`נמצאו ${total} רשומות · מוצג: ${count}`);
+    const count = res?.count ?? (res?.data?.length ?? 0);
+    setMetaText(`Found ${count} properties`);
 
     renderResults(res.data || []);
   } catch (e) {
-    showError(e.message || "שגיאה");
+    showError(e.message || "Error loading properties");
   } finally {
     setLoading(false);
   }
 }
 
-async function initFilters() {
-  // נטען דוגמית גדולה כדי למלא select של ערים/סוגים
-  const res = await fetchProperties({ limit: 100 });
-  const data = res.data || [];
-
-  const cities = uniqSorted(data.map((x) => x.city));
-  const types = uniqSorted(data.map((x) => x.type));
-
-  fillSelect("city", cities, "כל הערים");
-  fillSelect("type", types, "כל הסוגים");
-}
-
 function getFilterParamsFromUI() {
-  const q = document.getElementById("q").value.trim();
-  const city = document.getElementById("city").value.trim();
-  const type = document.getElementById("type").value.trim();
+  const address1 = document.getElementById("address1")?.value.trim() || "";
+  const address2 = document.getElementById("address2")?.value.trim() || "";
 
-  // optional: add these inputs later if you want
-  // const minPrice = document.getElementById("minPrice")?.value?.trim();
-  // const maxPrice = document.getElementById("maxPrice")?.value?.trim();
-
-  return { q, city, type, limit: 10, page: 1 };
+  // Mode A: address1 AND address2 (address detail mode)
+  if (address1 && address2) {
+    return { address1, address2 };
+  }
+  // Mode B: address1 empty, address2 as city (city listing mode)
+  else if (!address1 && address2) {
+    return { city: address2, limit: 12, page: 1 };
+  }
+  // Invalid: need at least address2 (city) or both address1+address2
+  return null;
 }
 
 document.getElementById("filtersForm").addEventListener("submit", async (e) => {
   e.preventDefault();
-  await loadAndRender(getFilterParamsFromUI());
+  const params = getFilterParamsFromUI();
+  if (!params) {
+    showError("Enter address or city");
+    return;
+  }
+  await loadAndRender(params);
 });
 
 document.getElementById("resetBtn").addEventListener("click", async () => {
-  document.getElementById("q").value = "";
-  document.getElementById("city").value = "";
-  document.getElementById("type").value = "";
-  await loadAndRender({ limit: 10, page: 1 });
+  const address1El = document.getElementById("address1");
+  const address2El = document.getElementById("address2");
+  if (address1El) address1El.value = "";
+  if (address2El) address2El.value = "";
+  await loadAndRender({});
 });
 
+// Auto-load on boot with default city
 (async function boot() {
+  // Check if we're on the properties page (has results container)
+  const results = document.getElementById("results");
+  if (!results) return;
+  
   setLoading(true);
+  setMetaText("Loading properties...");
+  
   try {
-    await initFilters();
-    await loadAndRender({ limit: 10, page: 1 });
+    const res = await fetchProperties({ city: "Denver", limit: 12, page: 1 });
+    const count = res?.count ?? (res?.data?.length ?? 0);
+    setMetaText(`Found ${count} properties`);
+    renderResults(res.data || []);
+    
+    // Set address2 input to "Denver" after successful load
+    const address2El = document.getElementById("address2");
+    if (address2El) address2El.value = "Denver";
   } catch (e) {
-    showError(e.message || "שגיאה");
+    showError(e.message || "Error loading properties");
+    setMetaText("Enter address or city to search properties");
   } finally {
     setLoading(false);
   }

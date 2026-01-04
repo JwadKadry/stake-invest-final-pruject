@@ -27,7 +27,40 @@ async function requestJson(url) {
 }
 
 export async function fetchProperties(params = {}) {
-  const qs = buildQuery(params);
-  const url = qs ? `${BASE_URL}?${qs}` : BASE_URL;
-  return requestJson(url);
+  const url = new URL("/api/properties", window.location.origin);
+  Object.entries(params).forEach(([k, v]) => {
+    if (v !== undefined && v !== null && v !== "") url.searchParams.set(k, v);
+  });
+  const r = await fetch(url, { credentials: "include" });
+  return r.json();
+}
+
+/**
+ * Helper function to load properties by postal code
+ * Example: loadPropertiesByZip("19977")
+ */
+export async function loadPropertiesByZip(zip) {
+  const res = await fetch(`/api/properties?postalCode=${encodeURIComponent(zip)}`, {
+    credentials: "include",
+  });
+  const json = await res.json();
+  if (json.status !== "OK") throw new Error(json.message);
+  return json.data || [];
+}
+
+/**
+ * Helper function to load properties by address
+ * Example: loadPropertiesByAddress("468 SEQUOIA DR", "SMYRNA, DE 19977")
+ */
+export async function loadPropertiesByAddress(address1, address2) {
+  const params = new URLSearchParams({
+    address1: encodeURIComponent(address1),
+    address2: encodeURIComponent(address2),
+  });
+  const res = await fetch(`/api/properties?${params.toString()}`, {
+    credentials: "include",
+  });
+  const json = await res.json();
+  if (json.status !== "OK") throw new Error(json.message);
+  return json.data || [];
 }

@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Stake • Checkout</title>
+  <link rel="stylesheet" href="./css/styles.css" />
+  <link rel="stylesheet" href="./css/checkout.css" />
+</head>
+<body>
+  <div class="wrap">
+    <div class="top">
+      <button class="pill" id="backBtn">חזרה</button>
+      <h1 style="margin:0">Checkout</h1>
+      <div></div>
+    </div>
+
+    <div id="err" style="display:none;color:#b91c1c;margin-bottom:10px"></div>
+
+    <div class="grid">
+      <!-- Left: Payment -->
+      <div class="card">
+        <div class="p">
+          <h2>אמצעי תשלום (דמו)</h2>
+          <div class="methods" role="radiogroup" aria-label="payment methods">
+            <label class="method">
+              <input type="radio" name="pay" value="card" checked />
+              <div>
+                <div><strong>כרטיס אשראי</strong></div>
+                <div class="muted">Visa / MasterCard (דמו)</div>
+              </div>
+            </label>
+
+            <label class="method">
+              <input type="radio" name="pay" value="bank" />
+              <div>
+                <div><strong>העברה בנקאית</strong></div>
+                <div class="muted">IBAN / Swift (דמו)</div>
+              </div>
+            </label>
+
+            <label class="method">
+              <input type="radio" name="pay" value="applepay" />
+              <div>
+                <div><strong>Apple Pay</strong></div>
+                <div class="muted">דמו בלבד</div>
+              </div>
+            </label>
+          </div>
+
+          <div class="btns">
+            <button class="ghost" id="cancelBtn">ביטול</button>
+            <button class="primary" id="payBtn">Pay (Demo)</button>
+          </div>
+
+          <div class="success" id="successBox">
+            ✅ תשלום דמו בוצע בהצלחה! ההשקעה נשמרה (דמו).
+          </div>
+        </div>
+      </div>
+
+      <!-- Right: Summary -->
+      <div class="card">
+        <div class="p">
+          <h2>סיכום השקעה</h2>
+
+          <div class="row">
+            <div class="muted">נכס</div>
+            <div id="sTitle">—</div>
+          </div>
+
+          <div class="row">
+            <div class="muted">עיר</div>
+            <div id="sCity">—</div>
+          </div>
+
+          <div class="row">
+            <div class="muted">סכום השקעה</div>
+            <div id="sAmount">—</div>
+          </div>
+
+          <div class="row">
+            <div class="muted">עמלה (1%)</div>
+            <div id="sFee">—</div>
+          </div>
+
+          <div class="row">
+            <div class="muted"><strong>סה״כ לתשלום</strong></div>
+            <div id="sTotal"><strong>—</strong></div>
+          </div>
+
+          <div id="remainingInfo" class="muted" style="margin-top:8px"></div>
+
+          <p class="muted" style="margin-top:12px;font-size:13px">
+            *Checkout זה דמו UI בלבד — אין תשלום אמיתי.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="./js/checkout.js"></script>
+</body>
+</html>
+

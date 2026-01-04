@@ -7,28 +7,90 @@
   <link rel="stylesheet" href="./css/styles.css" />
 </head>
 <body>
-    <main>
-        <form id="filtersForm">
-          <section id="filters">
-            <input id="q" name="q" placeholder="Search..." />
-            <select id="city" name="city" title="עיר"></select>
-            <select id="type" name="type" title="סוג"></select>
 
-            <button id="btnSearch" type="submit">Search</button>
-            <button id="resetBtn" type="button">Reset</button>
-          </section>
-        </form>
-      
-        <section id="status">
-          <p id="loading" hidden>Loading...</p>
-          <p id="error" hidden></p>
-          <p id="meta"></p>
-          <p id="msg"></p>
-        </section>
-      
-        <section id="results"></section>
-      </main>
-      
+  <div class="app-shell">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-mark">stake</div>
+        <div class="brand-sub">Real Estate</div>
+      </div>
+
+      <nav class="nav">
+        <a class="nav-item active" href="#">
+          <span class="nav-icon">🏠</span>
+          <span>Properties</span>
+        </a>
+        <a class="nav-item" href="portfolio.html">
+          <span class="nav-icon">💼</span>
+          <span>Portfolio</span>
+        </a>
+        <a class="nav-item" href="#">
+          <span class="nav-icon">🎁</span>
+          <span>Rewards</span>
+        </a>
+        <a class="nav-item" href="#">
+          <span class="nav-icon">🛒</span>
+          <span>Cart</span>
+        </a>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="user-pill">
+          <div class="avatar">JK</div>
+          <div class="user-meta">
+            <div class="user-name">Jwad Kadry</div>
+            <div class="user-sub">Guest</div>
+          </div>
+        </div>
+
+        <a class="help-link" href="#">Help and support</a>
+      </div>
+    </aside>
+
+    <!-- Main -->
+    <main class="content">
+      <header class="topbar">
+        <div class="page-title">
+          <h1>Properties</h1>
+          <p class="subtitle">חיפוש פרויקטים ופרטי הגרלות לפי עיר/סוג</p>
+        </div>
+
+        <div class="top-actions">
+          <button class="ghost-btn" type="button">Learn more</button>
+          <button class="primary-btn" type="button">Complete onboarding</button>
+        </div>
+      </header>
+
+      <!-- Tabs like Stake -->
+      <section class="tabs">
+        <button class="tab active" type="button" data-tab="available">Available</button>
+        <button class="tab" type="button" data-tab="funded">Funded</button>
+        <button class="tab" type="button" data-tab="exited">Exited</button>
+      </section>
+
+      <!-- Filters -->
+      <form id="filtersForm" class="filters">
+        <div class="filters-row">
+          <input id="address1" name="address1" type="text" placeholder="Address 1 (e.g., 4529 Winona Court)" required />
+          <input id="address2" name="address2" type="text" placeholder="City (e.g., Denver)" required />
+          <button id="btnSearch" class="primary-btn" type="submit">Search</button>
+          <button id="resetBtn" class="ghost-btn" type="button">Reset</button>
+        </div>
+      </form>
+
+      <!-- Status -->
+      <section id="status" class="status">
+        <p id="loading" class="loading" hidden>Loading...</p>
+        <p id="error" class="error" hidden></p>
+        <p id="meta" class="meta"></p>
+        <p id="msg" class="msg"></p>
+      </section>
+
+      <!-- Results -->
+      <section id="results" class="cards"></section>
+    </main>
+  </div>
 
   <script type="module" src="./js/main.js"></script>
 </body>

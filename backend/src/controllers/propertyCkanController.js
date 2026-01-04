@@ -7,9 +7,61 @@ function toNumberFromText(v) {
     return Number.isFinite(n) ? n : 0;
   }
   
+  // ---- City -> stable, professional image ----
+  const CITY_IMAGE_MAP = {
+    "Tel Aviv": "/images/cities/TelAviv.jpeg",
+    "תל אביב": "/images/cities/TelAviv.jpeg",
+    "מגדל העמק": "/images/cities/migdalhaemk.jpg",
+    "יהוד": "/images/cities/Yhod.webp",
+    "אופקים": "/images/cities/Ofakim.jpg",
+    "שדרות": "/images/cities/sderot.jpg",
+  };
+
   function makeImage(city) {
-    // placeholder image (works without storing images in DB)
-    return `https://source.unsplash.com/featured/800x600?housing,${encodeURIComponent(city || "Israel")}`;
+    if (!city) {
+      return `https://source.unsplash.com/featured/800x600?housing,Israel`;
+    }
+    
+    const cityTrimmed = String(city).trim();
+    
+    // בדיקה ישירה במפה
+    if (CITY_IMAGE_MAP[cityTrimmed]) {
+      return CITY_IMAGE_MAP[cityTrimmed];
+    }
+    
+    // בדיקות נוספות לווריאציות שונות
+    const cityLower = cityTrimmed.toLowerCase();
+    
+    // מגדל העמק
+    if (cityLower.includes("מגדל") && cityLower.includes("עמק")) {
+      return "/images/cities/migdalhaemk.jpg";
+    }
+    if (cityLower.includes("migdal") && cityLower.includes("haem")) {
+      return "/images/cities/migdalhaemk.jpg";
+    }
+    
+    // תל אביב
+    if (cityLower.includes("tel") && cityLower.includes("aviv")) {
+      return "/images/cities/TelAviv.jpeg";
+    }
+    
+    // יהוד
+    if (cityLower.includes("יהוד") || cityLower === "yehud") {
+      return "/images/cities/Yhod.webp";
+    }
+    
+    // אופקים
+    if (cityLower.includes("אופקים") || cityLower === "ofakim") {
+      return "/images/cities/Ofakim.jpg";
+    }
+    
+    // שדרות
+    if (cityLower.includes("שדרות") || cityLower === "sderot") {
+      return "/images/cities/sderot.jpg";
+    }
+    
+    // fallback: Unsplash
+    return `https://source.unsplash.com/featured/800x600?housing,${encodeURIComponent(cityTrimmed)}`;
   }
   
   function normalizeRecord(rec) {

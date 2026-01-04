@@ -3,6 +3,7 @@ const cors = require("cors");
 const path = require("path");
 
 const propertyRoutes = require("./routes/propertyRoutes");
+const investmentRoutes = require("./routes/investments");
 const errorHandler = require("./middlewares/errorHandler");
 
 const app = express();
@@ -27,6 +28,7 @@ app.get("/health", (req, res) => {
 
 // API
 app.use("/api/properties", propertyRoutes);
+app.use("/api/investments", investmentRoutes);
 
 // Errors
 app.use(errorHandler);

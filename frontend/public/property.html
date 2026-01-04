@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Stake • פרטי נכס</title>
+  <link rel="stylesheet" href="./css/styles.css" />
+  <link rel="stylesheet" href="./css/property.css" />
+</head>
+<body>
+  <div class="details-wrap">
+    <div class="details-top">
+      <button class="back-link" id="backBtn">חזרה</button>
+      <h1 style="margin:0">פרטי נכס</h1>
+      <div></div>
+    </div>
+
+    <div id="error" style="display:none;color:#b91c1c;margin:10px 0"></div>
+
+    <div class="details-grid">
+      <div class="panel">
+        <img id="heroImg" class="hero-img" alt="תמונת נכס" />
+        <div class="panel-body">
+          <h2 id="title" class="title"></h2>
+          <p id="subtitle" class="sub"></p>
+          <p id="desc" style="margin:12px 0 0;line-height:1.6"></p>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-body">
+          <div class="kpis">
+            <div class="kpi"><small>עיר</small><div id="city"></div></div>
+            <div class="kpi"><small>סוג</small><div id="type"></div></div>
+            <div class="kpi"><small>סטטוס</small><div id="status"></div></div>
+            <div class="kpi"><small>מחיר למ״ר</small><div id="price"></div></div>
+          </div>
+
+          <div class="actions">
+            <button class="primary" id="investBtn" type="button">Invest</button>
+            <button class="ghost" id="shareBtn">Share</button>
+          </div>
+
+          <p style="opacity:.65;margin-top:12px;font-size:13px">
+            *Demo UI (Stake-style) — אין ביצוע השקעה אמיתי.
+          </p>
+        </div>
+      </div>
+
+      <div class="panel" style="margin-top:14px">
+        <div class="panel-body">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:10px">
+            <div class="muted">התקדמות מימון</div>
+            <div id="fundedText" style="font-weight:700">0%</div>
+          </div>
+
+          <div style="height:10px;background:#eef2f7;border-radius:999px;overflow:hidden;margin-top:10px">
+            <div id="fundedBar" style="height:100%;width:0%;background:#22c55e"></div>
+          </div>
+
+          <div class="muted" id="fundedMeta" style="margin-top:8px">
+            0 ₪ מתוך 0 ₪
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <section class="panel" style="margin-top:14px">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
+        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+          <h3 style="margin:0">ההשקעות שלי בנכס</h3>
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+            <input type="checkbox" id="showCanceled" />
+            <span class="muted">הצג גם מבוטלות</span>
+          </label>
+        </div>
+        <div class="muted" id="invMeta">—</div>
+      </div>
+
+      <div style="overflow:auto;margin-top:10px">
+        <table style="width:100%;border-collapse:separate;border-spacing:0 8px">
+          <thead class="muted" style="text-align:right">
+            <tr>
+              <th style="padding:6px 10px">תאריך</th>
+              <th style="padding:6px 10px">סכום</th>
+              <th style="padding:6px 10px">עמלה</th>
+              <th style="padding:6px 10px">סה״כ</th>
+              <th style="padding:6px 10px">אמצעי</th>
+              <th style="padding:6px 10px">סטטוס</th>
+              <th style="padding:6px 10px">פעולות</th>
+            </tr>
+          </thead>
+          <tbody id="invRows"></tbody>
+        </table>
+      </div>
+
+      <div id="invEmpty" class="muted" style="margin-top:10px;display:none">
+        אין עדיין השקעות בנכס הזה.
+      </div>
+    </section>
+  </div>
+
+  <dialog id="investModal" class="stake-modal">
+    <form method="dialog" class="modal-card" id="investForm">
+      <div class="modal-head">
+        <div>
+          <div class="modal-title">השקעה בנכס</div>
+          <div class="modal-sub" id="investPropName">—</div>
+        </div>
+        <button type="button" class="icon-x" value="cancel" aria-label="סגירה">✕</button>
+      </div>
+
+      <div class="modal-body">
+        <label class="field">
+          <span>סכום השקעה (₪)</span>
+          <input id="investAmount" type="number" inputmode="numeric" min="250" step="50" placeholder="לדוגמה: 1000" required />
+          <small>מינימום ₪250 · צעדים של ₪50 (דמו)</small>
+        </label>
+
+        <label class="field" style="margin-top:10px">
+          <span>בחר סכום (Slider)</span>
+          <input id="investRange" type="range" min="250" max="20000" step="50" value="1000" />
+          <small id="rangeHint">₪1,000</small>
+        </label>
+
+        <div id="investError" style="display:none;color:#b91c1c;margin-top:10px;font-size:13px"></div>
+
+        <div class="calc-grid">
+          <div class="calc-item">
+            <small>עמלת שירות (1%)</small>
+            <div id="feeText">₪0</div>
+          </div>
+          <div class="calc-item">
+            <small>סה״כ לתשלום</small>
+            <div id="totalText">₪0</div>
+          </div>
+          <div class="calc-item">
+            <small>יחידות דמו</small>
+            <div id="unitsText">0</div>
+          </div>
+          <div class="calc-item">
+            <small>אחוז בעלות דמו</small>
+            <div id="pctText">0%</div>
+          </div>
+        </div>
+
+        <div class="disclaimer">
+          *זהו מודאל דמו (Stake-style). אין ביצוע תשלום אמיתי.
+        </div>
+      </div>
+
+      <div class="modal-foot">
+        <button class="ghost" value="cancel">ביטול</button>
+        <button class="primary" id="confirmInvestBtn" value="default">אישור השקעה</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script type="module" src="./js/property.js"></script>
+</body>
+</html>
