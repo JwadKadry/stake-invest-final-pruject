@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Stake • Register</title>
+  <link rel="stylesheet" href="./css/styles.css" />
+  <link rel="stylesheet" href="./css/property.css" />
+</head>
+<body>
+  <div class="wrap" style="max-width:400px;margin:60px auto;padding:20px">
+    <div style="text-align:center;margin-bottom:32px">
+      <h1 style="margin:0 0 8px">Create Account</h1>
+      <p class="muted">Sign up to start investing</p>
+    </div>
+
+    <form id="registerForm" class="panel">
+      <div class="panel-body">
+        <label class="field">
+          <span>Name (Optional)</span>
+          <input id="name" type="text" autocomplete="name" placeholder="Your name" />
+        </label>
+
+        <label class="field" style="margin-top:16px">
+          <span>Email</span>
+          <input id="email" type="email" required autocomplete="email" placeholder="your@email.com" />
+        </label>
+
+        <label class="field" style="margin-top:16px">
+          <span>Password</span>
+          <input id="password" type="password" required autocomplete="new-password" placeholder="••••••••" />
+        </label>
+
+        <div id="msg" style="margin-top:16px;padding:12px;border-radius:8px;display:none"></div>
+
+        <button class="primary-btn" type="submit" style="width:100%;margin-top:20px">
+          Create Account
+        </button>
+
+        <div style="text-align:center;margin-top:20px">
+          <a href="login.html" style="color:var(--primary);text-decoration:none;display:block;margin-bottom:8px">Already have an account? Login →</a>
+          <a href="index.html" style="color:var(--primary);text-decoration:none">← Back to Properties</a>
+        </div>
+      </div>
+    </form>
+  </div>
+
+  <script type="module" src="./js/register.js"></script>
+</body>
+</html>
+

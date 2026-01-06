@@ -8,6 +8,12 @@ const InvestmentSchema = new mongoose.Schema(
     title: { type: String, default: "" },
     city: { type: String, default: "" },
 
+    // Snapshot fields (stored at investment time for consistency)
+    propertyTitle: { type: String, default: "" },
+    propertyCity: { type: String, default: "" },
+    propertyImageUrl: { type: String, default: "" },
+    targetAmount: { type: Number, default: 0 },
+
     amount: { type: Number, required: true },
     fee: { type: Number, default: 0 },
     total: { type: Number, default: 0 },

@@ -6,6 +6,24 @@ const requireAuth = require("../middlewares/requireAuth");
 
 const router = express.Router();
 
+// Helper: Normalize investment snapshot fields
+function normalizeInvestmentSnapshot(inv) {
+  const title = inv.propertyTitle || inv.title || inv.snapshot?.title || null;
+  const city = inv.propertyCity || inv.city || inv.snapshot?.city || null;
+  const image = inv.propertyImageUrl || inv.imageUrl || inv.snapshot?.imageUrl || "/img/placeholder.jpg";
+  
+  // If title is missing, use Property • ID format (more product-like)
+  const finalTitle = title || `Property • ${inv.propertyId || "unknown"}`;
+  // If city missing, use empty string
+  const finalCity = city || "";
+  
+  return {
+    title: finalTitle,
+    city: finalCity,
+    imageUrl: image
+  };
+}
+
 // כל הראוטים כאן דורשים התחברות
 router.use(requireAuth);
 
@@ -118,8 +136,13 @@ router.get("/summary", async (req, res) => {
 // POST /api/investments (שומר עם userId)
 router.post("/", async (req, res) => {
   try {
-    const userId = req.user._id;
-    const { propertyId, title, city, amount, fee, total, paymentMethod, targetAmount: clientTargetAmount } = req.body;
+    // Always use userId from req.user, never from body
+    const uid = req.user?._id || req.user?.id;
+    if (!uid) {
+      return res.status(401).json({ status: "ERROR", message: "Unauthorized" });
+    }
+    
+    const { propertyId, amount, targetAmount: clientTargetAmount, title, city, imageUrl } = req.body;
 
     if (!propertyId || propertyId === "undefined") {
       return res.status(400).json({ status: "ERROR", message: "propertyId is required" });
@@ -131,8 +154,8 @@ router.post("/", async (req, res) => {
     }
 
     const feeRate = 0.01; // 1% עמלה
-    const f = Number(fee) || Math.round(amt * feeRate);
-    const t = Number(total) || (amt + f);
+    const f = Math.round(amt * feeRate);
+    const t = amt + f;
 
     // 1. Get or create PropertyMeta for targetAmount
     let targetAmount;
@@ -218,16 +241,21 @@ router.post("/", async (req, res) => {
       });
     }
 
-    // 5. Save investment
+    // 5. Save investment with snapshot fields (always use uid from req.user)
     const doc = await Investment.create({
-      userId,
+      userId: uid,
       propertyId: String(propertyId),
       title: title || "",
       city: city || "",
+      // Snapshot fields for portfolio consistency
+      propertyTitle: title || "",
+      propertyCity: city || "",
+      propertyImageUrl: imageUrl || "",
+      targetAmount: targetAmount,
       amount: amt,
       fee: f,
       total: t,
-      paymentMethod: paymentMethod || "card",
+      paymentMethod: "card", // Default payment method
     });
 
     // 6. Recompute totals after investment
@@ -251,14 +279,33 @@ router.post("/", async (req, res) => {
       ? Math.min(100, Math.round((updatedTotalInvested / targetAmount) * 100))
       : 0;
 
+    // Calculate user's total investment in this property
+    const userIdMatch = { $in: [uid, String(uid)] };
+    const userAgg = await Investment.aggregate([
+      {
+        $match: {
+          userId: userIdMatch,
+          propertyId: String(propertyId),
+          status: { $ne: "CANCELED" }
+        }
+      },
+      {
+        $group: {
+          _id: "$propertyId",
+          userInvested: { $sum: "$amount" }
+        }
+      }
+    ]);
+    const userInvested = userAgg[0]?.userInvested || 0;
+
     res.status(201).json({ 
       status: "OK", 
       data: doc,
-      totals: {
-        targetAmount,
+      summary: {
+        userInvested,
         totalInvested: updatedTotalInvested,
-        remaining: updatedRemaining,
         fundedPercent: updatedFundedPercent,
+        remaining: updatedRemaining
       }
     });
   } catch (e) {
@@ -355,6 +402,232 @@ router.patch("/:id/cancel", async (req, res) => {
         remaining
       }
     });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ status: "ERROR", message: "server error" });
+  }
+});
+
+// GET /api/investments/portfolio (auth required)
+router.get("/portfolio", async (req, res) => {
+  try {
+    // DEBUG: Print auth user info
+    
+    // Define uid from req.user (supports both _id and id)
+    const uid = req.user?._id || req.user?.id;
+
+    // Verify userId exists and is valid
+    if (!uid) {
+      console.error("ERROR: userId is missing!");
+      return res.status(401).json({ status: "ERROR", message: "Unauthorized" });
+    }
+
+    // Use $in to match both ObjectId and string formats
+    const userIdMatch = { $in: [uid, String(uid)] };
+
+
+    // 1. Aggregate user's investments grouped by propertyId
+    // First, sort by createdAt descending to get most recent first
+    const userInvestments = await Investment.aggregate([
+      {
+        $match: {
+          userId: userIdMatch,
+          status: { $ne: "CANCELED" },
+          propertyId: { $nin: ["undefined", null, undefined] }
+        }
+      },
+      {
+        $sort: { createdAt: -1 }
+      },
+      {
+        $group: {
+          _id: "$propertyId",
+          userInvested: { $sum: "$amount" },
+          maxCreatedAt: { $max: "$createdAt" },
+          // Get the most recent snapshot fields (first after sorting desc)
+          propertyTitle: { $first: "$propertyTitle" },
+          propertyCity: { $first: "$propertyCity" },
+          propertyImageUrl: { $first: "$propertyImageUrl" },
+          targetAmount: { $first: "$targetAmount" },
+          // Also get regular title/city as fallback
+          title: { $first: "$title" },
+          city: { $first: "$city" }
+        }
+      }
+    ]);
+
+    if (userInvestments.length === 0) {
+      return res.json({ 
+        status: "OK", 
+        data: [],
+        summary: {
+          totalUserInvested: 0,
+          totalInvestmentsCount: 0,
+          uniquePropertiesCount: 0,
+          topCity: null,
+          topCityValue: 0,
+          avgInvestment: 0
+        }
+      });
+    }
+
+    const propertyIds = userInvestments.map(inv => inv._id);
+
+    // 2. Aggregate totalInvested across ALL users for these propertyIds
+    const allUsersTotals = await Investment.aggregate([
+      {
+        $match: {
+          propertyId: { $in: propertyIds },
+          status: { $ne: "CANCELED" }
+        }
+      },
+      {
+        $group: {
+          _id: "$propertyId",
+          totalInvested: { $sum: "$amount" }
+        }
+      }
+    ]);
+
+    // Create a map for quick lookup
+    const totalsMap = {};
+    for (const tot of allUsersTotals) {
+      totalsMap[tot._id] = tot.totalInvested;
+    }
+
+    // 3. Get PropertyMeta for targetAmount (fallback if snapshot targetAmount is missing)
+    const propertyMetas = await PropertyMeta.find({ propertyId: { $in: propertyIds } });
+    const metaMap = {};
+    for (const meta of propertyMetas) {
+      metaMap[meta.propertyId] = meta.targetAmount;
+    }
+
+    // 4. Get total investment count for summary
+    const totalInvestmentsCount = await Investment.countDocuments({
+      userId: userIdMatch,
+      status: { $ne: "CANCELED" }
+    });
+
+    // 5. Combine data and compute fundedPercent and remaining, normalize snapshots
+    const portfolio = userInvestments.map(inv => {
+      const propertyId = inv._id;
+      const totalInvested = totalsMap[propertyId] || 0;
+      // Use snapshot targetAmount if available, otherwise PropertyMeta, otherwise 0
+      const targetAmount = inv.targetAmount || metaMap[propertyId] || 0;
+      const fundedPercent = targetAmount > 0 
+        ? Math.min(100, Math.round((totalInvested / targetAmount) * 100))
+        : 0;
+      const remaining = Math.max(0, targetAmount - totalInvested);
+
+      // Normalize snapshot fields
+      const snapshot = normalizeInvestmentSnapshot({
+        propertyId,
+        propertyTitle: inv.propertyTitle,
+        title: inv.title,
+        propertyCity: inv.propertyCity,
+        city: inv.city,
+        propertyImageUrl: inv.propertyImageUrl,
+        imageUrl: null
+      });
+
+      return {
+        propertyId,
+        userInvested: inv.userInvested,
+        totalInvested,
+        targetAmount,
+        fundedPercent,
+        remaining,
+        propertyTitle: snapshot.title,
+        propertyCity: snapshot.city,
+        imageUrl: snapshot.imageUrl,
+        lastInvestmentAt: inv.maxCreatedAt
+      };
+    });
+
+    // 6. Sort by userInvested desc
+    portfolio.sort((a, b) => b.userInvested - a.userInvested);
+
+    // 7. Calculate summary stats
+    const totalUserInvested = portfolio.reduce((sum, item) => sum + (item.userInvested || 0), 0);
+    const uniquePropertiesCount = portfolio.length;
+    const avgInvestment = totalUserInvested / Math.max(1, totalInvestmentsCount);
+
+    // Find top city (ignore empty city)
+    const cityTotals = {};
+    for (const item of portfolio) {
+      if (item.propertyCity && item.propertyCity.trim()) {
+        const city = item.propertyCity.trim();
+        cityTotals[city] = (cityTotals[city] || 0) + (item.userInvested || 0);
+      }
+    }
+    let topCity = "";
+    let topCityValue = 0;
+    for (const [city, value] of Object.entries(cityTotals)) {
+      if (value > topCityValue) {
+        topCityValue = value;
+        topCity = city;
+      }
+    }
+
+    res.json({ 
+      status: "OK", 
+      data: portfolio,
+      summary: {
+        totalUserInvested,
+        totalInvestmentsCount,
+        uniquePropertiesCount,
+        topCity: topCity || null,
+        topCityValue: topCity ? topCityValue : 0,
+        avgInvestment
+      }
+    });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ status: "ERROR", message: "server error" });
+  }
+});
+
+// GET /api/investments/recent (auth required)
+router.get("/recent", async (req, res) => {
+  try {
+    // DEBUG: Print auth user info
+    
+    // Define uid from req.user (supports both _id and id)
+    const uid = req.user?._id || req.user?.id;
+
+    // Verify userId exists and is valid
+    if (!uid) {
+      console.error("ERROR: userId is missing!");
+      return res.status(401).json({ status: "ERROR", message: "Unauthorized" });
+    }
+
+    // Use $in to match both ObjectId and string formats
+    const userIdMatch = { $in: [uid, String(uid)] };
+
+    const investments = await Investment.find({ 
+      userId: userIdMatch,
+      status: { $ne: "CANCELED" }
+    })
+      .sort({ createdAt: -1 })
+      .limit(10)
+      .lean();
+    
+
+    // Normalize each investment
+    const normalized = investments.map(inv => {
+      const snapshot = normalizeInvestmentSnapshot(inv);
+      return {
+        status: inv.status || "ACTIVE",
+        amount: inv.amount || 0,
+        createdAt: inv.createdAt,
+        propertyId: inv.propertyId || "",
+        propertyTitle: snapshot.title,
+        propertyCity: snapshot.city,
+        imageUrl: snapshot.imageUrl
+      };
+    });
+
+    res.json({ status: "OK", data: normalized });
   } catch (e) {
     console.error(e);
     res.status(500).json({ status: "ERROR", message: "server error" });

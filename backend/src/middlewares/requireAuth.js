@@ -1,19 +1,39 @@
-// Simple authentication middleware
-// TODO: Replace with your actual authentication logic
-module.exports = (req, res, next) => {
-  // For now, create a mock user for development
-  // In production, verify JWT token or session here
-  
-  // Mock user object (replace with actual user from token/session)
-  req.user = {
-    _id: "507f1f77bcf86cd799439011", // Mock ObjectId
-  };
-  
-  // Uncomment below to require actual authentication:
-  // if (!req.user) {
-  //   return res.status(401).json({ status: "ERROR", message: "Unauthorized" });
-  // }
-  
-  next();
+// Authentication middleware - requires session
+const User = require("../models/User");
+
+module.exports = async (req, res, next) => {
+  try {
+    // Check if user has valid session
+    if (!req.session || !req.session.userId) {
+      return res.status(401).json({ 
+        status: "ERROR", 
+        message: "Unauthorized" 
+      });
+    }
+
+    // Load user from database
+    const user = await User.findById(req.session.userId);
+    if (!user) {
+      // Invalid userId in session, clear it
+      req.session.destroy(() => {});
+      return res.status(401).json({ 
+        status: "ERROR", 
+        message: "Unauthorized" 
+      });
+    }
+
+    // Attach user to request
+    req.user = {
+      _id: user._id,
+      id: user._id, // Support both _id and id
+      email: user.email,
+      name: user.name
+    };
+
+    next();
+  } catch (e) {
+    console.error("Auth middleware error:", e);
+    res.status(500).json({ status: "ERROR", message: "server error" });
+  }
 };
 

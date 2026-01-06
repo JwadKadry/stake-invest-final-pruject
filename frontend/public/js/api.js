@@ -27,10 +27,12 @@ async function requestJson(url) {
 }
 
 export async function fetchProperties(params = {}) {
-  const url = new URL("/api/properties", window.location.origin);
+  const qs = new URLSearchParams();
   Object.entries(params).forEach(([k, v]) => {
-    if (v !== undefined && v !== null && v !== "") url.searchParams.set(k, v);
+    if (v !== undefined && v !== null && v !== "") qs.set(k, v);
   });
+  const queryString = qs.toString();
+  const url = `/api/properties${queryString ? `?${queryString}` : ""}`;
   const r = await fetch(url, { credentials: "include" });
   return r.json();
 }

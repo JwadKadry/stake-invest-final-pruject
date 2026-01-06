@@ -1,4 +1,3 @@
-console.log("property.js loaded ✅");
 
 // ===== Load Property from API =====
 async function loadPropertyFromApi() {
@@ -21,7 +20,6 @@ async function loadPropertyFromApi() {
     const json = await resp.json();
     const property = json.data || json;
     window.currentProperty = property;
-    console.log("currentProperty:", window.currentProperty);
     return property;
   } catch (e) {
     console.error("Error loading property:", e);
@@ -192,6 +190,7 @@ confirmBtn?.addEventListener("click", () => {
 
   const title = p?.title ?? "";
   const city = p?.city ?? "";
+  const imageUrl = p?.imageUrl ?? "";
   const targetAmount = p?.targetAmount;
 
   // סוגרים את המודאל, ואז עוברים ל-Checkout
@@ -200,6 +199,7 @@ confirmBtn?.addEventListener("click", () => {
     `/checkout.html?propertyId=${encodeURIComponent(propertyId)}` +
     `&title=${encodeURIComponent(title)}` +
     `&city=${encodeURIComponent(city)}` +
+    `&imageUrl=${encodeURIComponent(imageUrl)}` +
     `&amount=${encodeURIComponent(String(amt))}`;
   
   // Add targetAmount if available
@@ -367,8 +367,63 @@ async function initAfterPropertyLoaded() {
         // Progress doesn't change based on canceled filter, but keep consistent
         renderFundingProgress(p);
       });
+
+      // Initialize favorites button
+      const favoriteBtn = document.getElementById("favoriteBtn");
+      if (favoriteBtn) {
+        const { checkUserLoggedIn, isFavorited, toggleFavorite } = await import("./favorites.js");
+        
+        // Check initial state
+        const favorited = await isFavorited(propertyId);
+        if (favorited) {
+          favoriteBtn.classList.add("favorited");
+          favoriteBtn.style.color = "#fbbf24";
+          favoriteBtn.title = "Remove from favorites";
+        } else {
+          favoriteBtn.style.color = "#9ca3af";
+          favoriteBtn.title = "Add to favorites";
+        }
+
+        favoriteBtn.onmouseenter = () => {
+          if (!favoriteBtn.classList.contains("favorited")) {
+            favoriteBtn.style.color = "#fbbf24";
+          }
+        };
+
+        favoriteBtn.onmouseleave = () => {
+          if (!favoriteBtn.classList.contains("favorited")) {
+            favoriteBtn.style.color = "#9ca3af";
+          }
+        };
+
+        favoriteBtn.onclick = async () => {
+          const isLoggedIn = await checkUserLoggedIn();
+          if (!isLoggedIn) {
+            alert("Login to save favorites");
+            return;
+          }
+
+          const title = p?.title || p?.addressOneLine || "";
+          const city = p?.city || "";
+          const imageUrl = p?.imageUrl || "";
+
+          await toggleFavorite(propertyId, title, city, imageUrl, favoriteBtn);
+        };
+      }
     }
   } catch (e) {
     console.error(e);
   }
 }
+
+// ===== Back Button Handler =====
+document.addEventListener("DOMContentLoaded", () => {
+  const backBtn = document.getElementById("backBtn") || document.querySelector('[data-action="back"]');
+  if (!backBtn) return;
+
+  backBtn.addEventListener("click", (e) => {
+    e.preventDefault();
+    // תמיד לחזור לעמוד הבית
+    window.location.assign("/index.html");
+  });
+});

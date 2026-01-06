@@ -1,15 +1,6 @@
-const STORAGE_KEY = "stake_demo_investments";
-
+// investments.js - Portfolio and Recent Activity
 function fmtILS(n) {
   return `${Number(n || 0).toLocaleString("he-IL")} ₪`;
-}
-
-function safeParse(json) {
-  try {
-    return JSON.parse(json);
-  } catch {
-    return [];
-  }
 }
 
 // Load portfolio data (grouped by propertyId)
@@ -22,7 +13,17 @@ async function loadPortfolio() {
   }
   if (!resp.ok) throw new Error("Failed to load portfolio");
   const json = await resp.json();
-  return json.data || [];
+  return {
+    data: json.data || [],
+    summary: json.summary || {
+      totalUserInvested: 0,
+      totalInvestmentsCount: 0,
+      uniquePropertiesCount: 0,
+      topCity: null,
+      topCityValue: 0,
+      avgInvestment: 0
+    }
+  };
 }
 
 // Load recent investments
@@ -40,8 +41,8 @@ async function loadRecentActivity() {
 
 function bySort(mode) {
   return (a, b) => {
-    const da = new Date(a.lastInvestedAt || 0).getTime();
-    const db = new Date(b.lastInvestedAt || 0).getTime();
+    const da = new Date(a.lastInvestmentAt || 0).getTime();
+    const db = new Date(b.lastInvestmentAt || 0).getTime();
     const aa = Number(a.userInvested || 0);
     const ab = Number(b.userInvested || 0);
 
@@ -65,47 +66,29 @@ function matchesSearch(item, q) {
   );
 }
 
-function updateKpis(portfolio) {
+function updateKpis(summary) {
   const kpiCount = document.getElementById("kpiCount");
   const kpiTotal = document.getElementById("kpiTotal");
   const kpiUnique = document.getElementById("kpiUnique");
   const kpiAvg = document.getElementById("kpiAvg");
   const kpiTopCity = document.getElementById("kpiTopCity");
 
-  const count = portfolio.length;
-  const sum = portfolio.reduce((acc, x) => acc + Number(x.userInvested || 0), 0);
-  const unique = portfolio.length; // Already grouped by propertyId
-  const avg = count ? sum / count : 0;
+  if (!kpiCount || !kpiTotal || !kpiUnique) return;
 
-  // Top city by user investment amount
-  const byCity = portfolio.reduce((acc, x) => {
-    const city = String(x.propertyCity || "—").trim() || "—";
-    const val = Number(x.userInvested || 0);
-    acc[city] = (acc[city] || 0) + val;
-    return acc;
-  }, {});
-
-  let topCity = "—";
-  let topValue = -1;
-
-  for (const city of Object.keys(byCity)) {
-    const v = byCity[city];
-    if (v > topValue) {
-      topValue = v;
-      topCity = city;
-    }
-  }
-
-  if (kpiCount) kpiCount.textContent = count.toLocaleString("he-IL");
-  if (kpiTotal) kpiTotal.textContent = fmtILS(sum);
-  if (kpiUnique) kpiUnique.textContent = unique.toLocaleString("he-IL");
-  if (kpiAvg) kpiAvg.textContent = fmtILS(avg);
+  kpiCount.textContent = (summary.totalInvestmentsCount || 0).toLocaleString("he-IL");
+  kpiTotal.textContent = fmtILS(summary.totalUserInvested || 0);
+  kpiUnique.textContent = (summary.uniquePropertiesCount || 0).toLocaleString("he-IL");
+  if (kpiAvg) kpiAvg.textContent = fmtILS(summary.avgInvestment || 0);
   if (kpiTopCity) {
-    kpiTopCity.textContent = topCity === "—" ? "—" : `${topCity} · ${fmtILS(topValue)}`;
+    if (summary.topCity) {
+      kpiTopCity.textContent = `${summary.topCity} · ${fmtILS(summary.topCityValue || 0)}`;
+    } else {
+      kpiTopCity.textContent = "—";
+    }
   }
 }
 
-function render(portfolio) {
+function renderPortfolio(portfolio) {
   const grid = document.getElementById("grid");
   const empty = document.getElementById("empty");
   const meta = document.getElementById("meta");
@@ -129,25 +112,31 @@ function render(portfolio) {
     const head = document.createElement("div");
     head.className = "card-head";
 
-    // Property image if available
-    if (item.propertyImageUrl) {
-      const imgWrap = document.createElement("div");
-      imgWrap.style.cssText = "width:100%;height:200px;overflow:hidden;border-radius:8px;margin-bottom:12px;background:#f3f4f6";
-      const img = document.createElement("img");
-      img.src = item.propertyImageUrl;
-      img.style.cssText = "width:100%;height:100%;object-fit:cover";
-      img.alt = item.propertyTitle || "Property";
-      imgWrap.appendChild(img);
-      head.appendChild(imgWrap);
-    }
+    // Property image - always show (will use placeholder if missing)
+    const imgWrap = document.createElement("div");
+    imgWrap.style.cssText = "width:100%;height:200px;overflow:hidden;border-radius:8px;margin-bottom:12px;background:#f3f4f6";
+    const img = document.createElement("img");
+    img.src = item.imageUrl || item.propertyImageUrl || "/img/placeholder.jpg";
+    img.style.cssText = "width:100%;height:100%;object-fit:cover";
+    img.alt = item.propertyTitle || "Property";
+    img.onerror = () => { 
+      img.src = "/img/placeholder.jpg";
+    };
+    imgWrap.appendChild(img);
+    head.appendChild(imgWrap);
 
     const titleWrap = document.createElement("div");
     const h = document.createElement("h3");
     h.className = "card-title";
-    h.textContent = item.propertyTitle || "נכס";
+    h.textContent = item.propertyTitle || `Property • ${item.propertyId || "unknown"}`;
     const sub = document.createElement("div");
     sub.className = "muted";
-    sub.textContent = `${item.propertyCity || "—"} • ${item.propertyId || "—"}`;
+    // Only show city if it exists and is not empty
+    if (item.propertyCity && item.propertyCity.trim()) {
+      sub.textContent = `${item.propertyCity} • ${item.propertyId || "—"}`;
+    } else {
+      sub.textContent = item.propertyId || "—";
+    }
     titleWrap.appendChild(h);
     titleWrap.appendChild(sub);
 
@@ -239,12 +228,18 @@ function renderRecentActivity(recent) {
     tr.style.cssText = "border-bottom:1px solid #e5e7eb";
 
     const date = new Date(inv.createdAt || Date.now()).toLocaleString("he-IL");
-    const propertyName = inv.propertyTitle || inv.propertyId || "—";
+    const propertyName = inv.propertyTitle || `Property • ${inv.propertyId || "unknown"}`;
     const statusText = inv.status === "CANCELED" ? "בוטל" : "פעיל";
+    
+    // Build property cell with title and optional city
+    let propertyCell = propertyName;
+    if (inv.propertyCity && inv.propertyCity.trim()) {
+      propertyCell = `${propertyName}<br><small style="color:#6b7280">${inv.propertyCity}</small>`;
+    }
 
     tr.innerHTML = `
       <td style="padding:12px 8px">${date}</td>
-      <td style="padding:12px 8px">${propertyName}</td>
+      <td style="padding:12px 8px">${propertyCell}</td>
       <td style="padding:12px 8px"><strong>${fmtILS(inv.amount)}</strong></td>
       <td style="padding:12px 8px">${statusText}</td>
     `;
@@ -254,18 +249,23 @@ function renderRecentActivity(recent) {
 }
 
 async function applyAndRender() {
-  const q = document.getElementById("search")?.value || "";
-  const sort = document.getElementById("sort")?.value || "newest";
+  const searchInput = document.getElementById("search");
+  const sortSelect = document.getElementById("sort");
+  const q = searchInput?.value || "";
+  const sort = sortSelect?.value || "newest";
 
   try {
-    const portfolio = await loadPortfolio();
-    updateKpis(portfolio);
+    const portfolioResult = await loadPortfolio();
+    const portfolio = portfolioResult.data;
+    const summary = portfolioResult.summary;
+    
+    updateKpis(summary);
 
     const view = portfolio
       .filter((x) => matchesSearch(x, q))
       .sort(bySort(sort));
 
-    render(view);
+    renderPortfolio(view);
 
     // Load and render recent activity
     const recent = await loadRecentActivity();
@@ -277,14 +277,12 @@ async function applyAndRender() {
       const grid = document.getElementById("grid");
       const empty = document.getElementById("empty");
       const recentPanel = document.getElementById("recentActivityPanel");
+      const controls = document.querySelector(".controls");
       
       if (loginMsg) loginMsg.style.display = "block";
       if (grid) grid.style.display = "none";
       if (empty) empty.style.display = "none";
       if (recentPanel) recentPanel.style.display = "none";
-      
-      // Hide controls that require login
-      const controls = document.querySelector(".controls");
       if (controls) controls.style.display = "none";
     } else {
       console.error("Error loading portfolio:", e);
@@ -293,24 +291,14 @@ async function applyAndRender() {
   }
 }
 
-// Always go to home (Properties)
-function goHome() {
-  window.location.href = "/index.html";
+// UI event handlers
+const backBtn = document.getElementById("backBtn");
+if (backBtn) {
+  backBtn.onclick = () => {
+    // תמיד חוזר לדף הבית (גם אם יש history)
+    window.location.assign("/index.html");
+  };
 }
-
-document.addEventListener("DOMContentLoaded", () => {
-  const backBtn =
-    document.querySelector('[data-action="back"]') ||
-    document.getElementById("backBtn") ||
-    document.querySelector(".btn-back");
-
-  if (backBtn) {
-    backBtn.addEventListener("click", (e) => {
-      e.preventDefault();
-      goHome();
-    });
-  }
-});
 
 const refreshBtn = document.getElementById("refreshBtn");
 if (refreshBtn) refreshBtn.onclick = applyAndRender;
@@ -338,3 +326,4 @@ if (clearBtn) {
   
   await applyAndRender();
 })();
+

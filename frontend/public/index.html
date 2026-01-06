@@ -25,6 +25,22 @@
           <span class="nav-icon">💼</span>
           <span>Portfolio</span>
         </a>
+        <a class="nav-item" href="favorites.html">
+          <span class="nav-icon">⭐</span>
+          <span>Favorites</span>
+        </a>
+        <a class="nav-item" href="login.html" data-nav="login">
+          <span class="nav-icon">🔐</span>
+          <span>Login</span>
+        </a>
+        <a class="nav-item" href="#" data-nav="logout" style="display:none">
+          <span class="nav-icon">🚪</span>
+          <span>Logout</span>
+        </a>
+        <a class="nav-item" href="register.html" data-nav="register">
+          <span class="nav-icon">📝</span>
+          <span>Register</span>
+        </a>
         <a class="nav-item" href="#">
           <span class="nav-icon">🎁</span>
           <span>Rewards</span>
@@ -40,7 +56,7 @@
           <div class="avatar">JK</div>
           <div class="user-meta">
             <div class="user-name">Jwad Kadry</div>
-            <div class="user-sub">Guest</div>
+            <div class="user-sub" data-auth="userBadge">Guest</div>
           </div>
         </div>
 
@@ -93,5 +109,20 @@
   </div>
 
   <script type="module" src="./js/main.js"></script>
+  <script type="module">
+    import { updateAuthNav, logout } from "/js/auth-ui.js";
+
+    const user = await updateAuthNav();
+
+    const logoutLink = document.querySelector('[data-nav="logout"]');
+    if (logoutLink) {
+      logoutLink.addEventListener("click", async (e) => {
+        e.preventDefault();
+        await logout();
+        await updateAuthNav();
+        window.location.href = "/index.html";
+      });
+    }
+  </script>
 </body>
 </html>

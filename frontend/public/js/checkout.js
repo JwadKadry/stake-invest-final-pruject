@@ -31,6 +31,7 @@ if (!propertyId || propertyId === "undefined") {
 
 const title = params.get("title") || "—";
 const city = params.get("city") || "—";
+const imageUrl = params.get("imageUrl") || "";
 let amount = Number(params.get("amount") || 0);
 const targetAmountParam = params.get("targetAmount"); // Optional, from property page
 
@@ -132,6 +133,7 @@ qs("payBtn").onclick = async () => {
     propertyId,
     title,
     city,
+    imageUrl,
     amount,
     fee,
     total,

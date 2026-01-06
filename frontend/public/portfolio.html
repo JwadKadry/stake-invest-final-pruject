@@ -64,11 +64,34 @@
 
     <div id="meta" class="muted" style="margin:8px 2px 12px"></div>
 
+    <div id="loginMessage" class="empty" style="display:none">
+      <p>Login to view your portfolio</p>
+    </div>
+
     <div id="grid" class="grid"></div>
     <div id="empty" class="empty" style="display:none">אין עדיין השקעות. בצע השקעה דרך Checkout (Demo).</div>
+
+    <div class="panel" style="margin-top:24px;display:none" id="recentActivityPanel">
+      <h2 style="margin-bottom:12px">Recent Activity</h2>
+      <div id="recentActivity" style="overflow-x:auto">
+        <table style="width:100%;border-collapse:collapse">
+          <thead>
+            <tr style="border-bottom:1px solid #e5e7eb">
+              <th style="padding:8px;text-align:right">Date</th>
+              <th style="padding:8px;text-align:right">Property</th>
+              <th style="padding:8px;text-align:right">Amount</th>
+              <th style="padding:8px;text-align:right">Status</th>
+            </tr>
+          </thead>
+          <tbody id="recentActivityBody">
+          </tbody>
+        </table>
+        <div id="recentEmpty" class="empty" style="display:none">No recent activity</div>
+      </div>
+    </div>
   </div>
 
-  <script type="module" src="./js/portfolio.js"></script>
+  <script type="module" src="./js/investments.js"></script>
 </body>
 </html>
 

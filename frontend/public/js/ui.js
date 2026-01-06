@@ -74,7 +74,7 @@ function seededPercent(seed) {
 // Placeholder image URL for fallback
 const PLACEHOLDER_IMAGE = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1200' height='700'%3E%3Crect fill='%23e9eef6' width='1200' height='700'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='sans-serif' font-size='24' fill='%2364748b'%3ENo Image%3C/text%3E%3C/svg%3E";
 
-export function renderResults(properties) {
+export async function renderResults(properties) {
   const root = document.getElementById("results");
   if (!root) return;
   
@@ -86,6 +86,9 @@ export function renderResults(properties) {
     root.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--muted)">No properties found</div>';
     return;
   }
+
+  // Import favorites module
+  const { createFavoritesButton } = await import("./favorites.js");
 
   for (const p of properties) {
     const card = document.createElement("article");
@@ -195,8 +198,17 @@ export function renderResults(properties) {
       window.location.href = `property.html?id=${encodeURIComponent(id)}`;
     };
 
+    // Add favorites button
+    const favoriteBtn = createFavoritesButton(
+      p.id,
+      p.title || p.addressOneLine || "Property",
+      p.city || "",
+      p.imageUrl || ""
+    );
+
     footer.appendChild(price);
     footer.appendChild(btn);
+    footer.appendChild(favoriteBtn);
 
     card.appendChild(media);
     card.appendChild(body);
