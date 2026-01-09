@@ -78,7 +78,22 @@ router.get("/", async (req, res) => {
     if (propertyId) filter.propertyId = String(propertyId);
 
     const items = await Investment.find(filter).sort({ createdAt: -1 });
-    res.json({ status: "OK", data: items });
+    
+    // ✅ Return with amount, fee, totalCharged
+    const data = items.map(i => ({
+      id: i._id.toString(),
+      propertyId: i.propertyId,
+      amount: i.amount,
+      fee: i.fee,
+      totalCharged: i.totalCharged || i.total || (i.amount + i.fee),
+      createdAt: i.createdAt,
+      status: i.status,
+      paymentMethod: i.paymentMethod,
+      title: i.title,
+      city: i.city,
+    }));
+    
+    res.json({ status: "OK", data });
   } catch (e) {
     console.error(e);
     res.status(500).json({ status: "ERROR", message: "server error" });
@@ -153,9 +168,15 @@ router.post("/", async (req, res) => {
       return res.status(400).json({ status: "ERROR", message: "amount must be a positive number" });
     }
 
+    // ✅ Minimum investment validation
+    const MIN_INVEST = 2000;
+    if (amt < MIN_INVEST) {
+      return res.status(400).json({ status: "ERROR", message: `Minimum investment is ${MIN_INVEST}` });
+    }
+
     const feeRate = 0.01; // 1% עמלה
-    const f = Math.round(amt * feeRate);
-    const t = amt + f;
+    const fee = Math.round(amt * feeRate);
+    const totalCharged = amt + fee; // מה שהמשתמש שילם בפועל
 
     // 1. Get or create PropertyMeta for targetAmount
     let targetAmount;
@@ -169,9 +190,9 @@ router.post("/", async (req, res) => {
         if (clientTargetAmount !== undefined) {
           const clientTarget = Number(clientTargetAmount);
           if (Number.isFinite(clientTarget) && clientTarget > 0) {
-            // Validate range: 120000..1200000
+            // Validate range: 120000..3000000 (✅ עד 3 מיליון - דמו)
             const MIN_TARGET = 120000;
-            const MAX_TARGET = 1200000;
+            const MAX_TARGET = 3000000;
             if (clientTarget >= MIN_TARGET && clientTarget <= MAX_TARGET) {
               initialTargetAmount = clientTarget;
             } else {
@@ -242,6 +263,7 @@ router.post("/", async (req, res) => {
     }
 
     // 5. Save investment with snapshot fields (always use uid from req.user)
+    // ✅ amount = נטו לנכס, fee = עמלה, totalCharged = מה שהמשתמש שילם בפועל
     const doc = await Investment.create({
       userId: uid,
       propertyId: String(propertyId),
@@ -252,64 +274,88 @@ router.post("/", async (req, res) => {
       propertyCity: city || "",
       propertyImageUrl: imageUrl || "",
       targetAmount: targetAmount,
-      amount: amt,
-      fee: f,
-      total: t,
+      amount: amt,        // ✅ נטו לנכס (רק זה נכנס למימון הנכס)
+      fee: fee,           // ✅ עמלה
+      total: totalCharged, // תאימות לאחור
+      totalCharged: totalCharged, // מה שהמשתמש שילם בפועל
       paymentMethod: "card", // Default payment method
     });
 
-    // 6. Recompute totals after investment
-    const updatedAgg = await Investment.aggregate([
-      {
-        $match: {
-          propertyId: String(propertyId),
-          status: { $ne: "CANCELED" }
-        }
-      },
-      {
-        $group: {
-          _id: "$propertyId",
-          totalInvested: { $sum: "$amount" }
-        }
-      }
-    ]);
-    const updatedTotalInvested = updatedAgg[0]?.totalInvested || 0;
-    const updatedRemaining = Math.max(0, targetAmount - updatedTotalInvested);
-    const updatedFundedPercent = targetAmount > 0 
-      ? Math.min(100, Math.round((updatedTotalInvested / targetAmount) * 100))
-      : 0;
+    // 6. Return investmentId and propertyId for frontend redirect
+    const investmentId = String(doc._id);
 
-    // Calculate user's total investment in this property
-    const userIdMatch = { $in: [uid, String(uid)] };
-    const userAgg = await Investment.aggregate([
-      {
-        $match: {
-          userId: userIdMatch,
-          propertyId: String(propertyId),
-          status: { $ne: "CANCELED" }
-        }
-      },
-      {
-        $group: {
-          _id: "$propertyId",
-          userInvested: { $sum: "$amount" }
-        }
-      }
-    ]);
-    const userInvested = userAgg[0]?.userInvested || 0;
-
-    res.status(201).json({ 
-      status: "OK", 
-      data: doc,
-      summary: {
-        userInvested,
-        totalInvested: updatedTotalInvested,
-        fundedPercent: updatedFundedPercent,
-        remaining: updatedRemaining
-      }
+    res.status(201).json({
+      status: "OK",
+      investmentId,
+      propertyId: String(propertyId),
     });
   } catch (e) {
     console.error(e);
+    res.status(500).json({ status: "ERROR", message: "server error" });
+  }
+});
+
+// POST /api/investments/:id/confirm - Confirm payment
+// POST /api/investments/:id/pay - Confirm payment
+router.post("/:id/pay", async (req, res) => {
+  try {
+    const userId = req.user?._id || req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ status: "ERROR", message: "Unauthorized" });
+    }
+
+    const { id } = req.params;
+    const { paymentMethod } = req.body;
+
+    const inv = await Investment.findOne({ _id: id, userId });
+    if (!inv) {
+      return res.status(404).json({ status: "ERROR", message: "Investment not found" });
+    }
+
+    // Update payment method and mark as paid
+    inv.paymentMethod = paymentMethod || "card";
+    inv.status = "ACTIVE"; // Ensure it's active
+    inv.paidAt = new Date(); // Mark payment timestamp
+    await inv.save();
+
+    return res.json({ 
+      status: "OK", 
+      message: "Payment confirmed", 
+      data: { id: inv._id.toString() } 
+    });
+  } catch (err) {
+    console.error("[payInvestment] Error:", err);
+    return res.status(500).json({ status: "ERROR", message: "Server error" });
+  }
+});
+
+// POST /api/investments/:id/confirm - Alias for /pay (backward compatibility)
+router.post("/:id/confirm", async (req, res) => {
+  try {
+    const userId = req.user?._id || req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ status: "ERROR", message: "Unauthorized" });
+    }
+
+    const { id } = req.params;
+    const { paymentMethod } = req.body;
+
+    const inv = await Investment.findOne({ _id: id, userId });
+    if (!inv) {
+      return res.status(404).json({ status: "ERROR", message: "Investment not found" });
+    }
+
+    inv.paymentMethod = paymentMethod || "card";
+    inv.status = "ACTIVE";
+    inv.paidAt = new Date();
+    await inv.save();
+
+    return res.json({ 
+      status: "OK", 
+      data: inv 
+    });
+  } catch (e) {
+    console.error("Confirm payment error:", e);
     res.status(500).json({ status: "ERROR", message: "server error" });
   }
 });
@@ -332,6 +378,48 @@ router.delete("/:id", async (req, res) => {
   } catch (e) {
     console.error(e);
     res.status(500).json({ status: "ERROR", message: "server error" });
+  }
+});
+
+// POST /api/investments/:id/request-cancel
+// ✅ Request cancellation (doesn't cancel immediately, just changes status to CANCEL_REQUESTED)
+router.post("/:id/request-cancel", async (req, res) => {
+  try {
+    const userId = req.user?._id || req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ status: "ERROR", message: "Unauthorized" });
+    }
+
+    const { id } = req.params;
+    const investment = await Investment.findOne({ _id: id, userId });
+
+    if (!investment) {
+      return res.status(404).json({ status: "ERROR", message: "Investment not found" });
+    }
+
+    // ✅ Only ACTIVE investments can request cancellation
+    if (investment.status !== "ACTIVE") {
+      return res.status(400).json({ 
+        status: "ERROR", 
+        message: "Cannot request cancel for this status" 
+      });
+    }
+
+    // ✅ Change status to CANCEL_REQUESTED (doesn't affect funding, just marks for admin review)
+    investment.status = "CANCEL_REQUESTED";
+    await investment.save();
+
+    res.json({ 
+      status: "OK", 
+      message: "Cancel request sent to admin",
+      data: {
+        id: investment._id.toString(),
+        status: investment.status
+      }
+    });
+  } catch (err) {
+    console.error("[requestCancel] Error:", err);
+    res.status(500).json({ status: "ERROR", message: "Server error" });
   }
 });
 
@@ -631,6 +719,61 @@ router.get("/recent", async (req, res) => {
   } catch (e) {
     console.error(e);
     res.status(500).json({ status: "ERROR", message: "server error" });
+  }
+});
+
+// GET /api/investments/:id - Get single investment by ID (for payment page)
+// ⚠️ Must be after all specific routes (/summary, /portfolio, /recent) to avoid conflicts
+router.get("/:id", async (req, res) => {
+  try {
+    const userId = req.user?._id || req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ status: "ERROR", message: "Unauthorized" });
+    }
+
+    const { id } = req.params;
+
+    const inv = await Investment.findOne({ _id: id, userId });
+    if (!inv) {
+      return res.status(404).json({ status: "ERROR", message: "Investment not found" });
+    }
+
+    // Get property details if propertyId exists
+    const Property = require("../models/Property");
+    let propertyTitle = "";
+    if (inv.propertyId) {
+      try {
+        const prop = await Property.findById(inv.propertyId).select("title city").lean();
+        if (prop) {
+          propertyTitle = prop.title || `${prop.city || ""}`.trim();
+        }
+      } catch (e) {
+        // Property not found - use snapshot data
+        propertyTitle = inv.propertyTitle || inv.title || "";
+      }
+    }
+
+    const amount = Number(inv.amount || 0);
+    const fee = Number(inv.fee || 0);
+    const totalCharged = Number(inv.totalCharged || inv.total || amount + fee);
+
+    return res.json({
+      status: "OK",
+      data: {
+        id: inv._id.toString(),
+        propertyId: inv.propertyId?.toString() || null,
+        propertyTitle: propertyTitle || inv.propertyTitle || "",
+        amount,        // ✅ נטו לנכס
+        fee,           // ✅ עמלה
+        totalCharged,  // ✅ מה שהמשתמש שילם בפועל
+        status: inv.status || "ACTIVE",
+        paymentMethod: inv.paymentMethod || "card",
+        createdAt: inv.createdAt,
+      },
+    });
+  } catch (err) {
+    console.error("[getInvestmentById] Error:", err);
+    return res.status(500).json({ status: "ERROR", message: "Server error" });
   }
 });
 

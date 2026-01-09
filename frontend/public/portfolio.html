@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Stake • Portfolio</title>
+  <title>Stake • ההשקעות שלי</title>
   <link rel="stylesheet" href="./css/styles.css" />
   <link rel="stylesheet" href="./css/portfolio.css" />
 </head>
@@ -11,11 +11,16 @@
   <div class="wrap">
     <div class="top">
       <button class="pill" id="backBtn">חזרה</button>
-      <h1 class="title">Portfolio</h1>
+      <h1 class="title">ההשקעות שלי</h1>
       <div></div>
     </div>
+    
+    <!-- Portfolio Description -->
+    <div class="panel portfolio-intro">
+      <p>כאן תוכל לראות את כל ההשקעות שלך, אחוז הבעלות שלך בכל נכס, וההכנסות שנצברו עבורך.</p>
+    </div>
 
-    <div class="panel">
+    <div class="panel" style="margin-top:12px">
       <div class="controls">
         <div class="left">
           <input id="search" placeholder="חיפוש לפי נכס/עיר..." />
@@ -56,7 +61,7 @@
         </div>
 
         <div class="kpiBox">
-          <div class="muted">Top city</div>
+          <div class="muted">עיר מובילה</div>
           <div id="kpiTopCity" style="font-weight:800;font-size:18px">—</div>
         </div>
       </div>
@@ -65,32 +70,37 @@
     <div id="meta" class="muted" style="margin:8px 2px 12px"></div>
 
     <div id="loginMessage" class="empty" style="display:none">
-      <p>Login to view your portfolio</p>
+      <p>התחבר כדי לצפות בהשקעות שלך</p>
     </div>
 
     <div id="grid" class="grid"></div>
     <div id="empty" class="empty" style="display:none">אין עדיין השקעות. בצע השקעה דרך Checkout (Demo).</div>
 
     <div class="panel" style="margin-top:24px;display:none" id="recentActivityPanel">
-      <h2 style="margin-bottom:12px">Recent Activity</h2>
+      <h2 style="margin-bottom:12px">פעילות אחרונה</h2>
       <div id="recentActivity" style="overflow-x:auto">
         <table style="width:100%;border-collapse:collapse">
           <thead>
             <tr style="border-bottom:1px solid #e5e7eb">
-              <th style="padding:8px;text-align:right">Date</th>
-              <th style="padding:8px;text-align:right">Property</th>
-              <th style="padding:8px;text-align:right">Amount</th>
-              <th style="padding:8px;text-align:right">Status</th>
+              <th style="padding:8px;text-align:right">תאריך</th>
+              <th style="padding:8px;text-align:right">נכס</th>
+              <th style="padding:8px;text-align:right">סכום</th>
+              <th style="padding:8px;text-align:right">סטטוס</th>
             </tr>
           </thead>
           <tbody id="recentActivityBody">
           </tbody>
         </table>
-        <div id="recentEmpty" class="empty" style="display:none">No recent activity</div>
+        <div id="recentEmpty" class="empty" style="display:none">אין פעילות אחרונה</div>
       </div>
     </div>
   </div>
 
+  <script type="module">
+    // ✅ Sync auth state from server (not localStorage)
+    import { updateAuthNav } from "./js/auth-ui.js";
+    await updateAuthNav();
+  </script>
   <script type="module" src="./js/investments.js"></script>
 </body>
 </html>

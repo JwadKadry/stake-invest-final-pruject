@@ -1,6 +1,24 @@
 // public/js/api.js
 const BASE_URL = "/api/properties";
 
+/**
+ * Central API fetch function that always includes credentials
+ * This ensures cookies/session are sent with every request
+ */
+export function apiFetch(path, options = {}) {
+  // Remove leading slash if API_BASE already has it, or add if needed
+  const url = path.startsWith("/") ? path : `/${path}`;
+  
+  return fetch(url, {
+    ...options,
+    credentials: "include", // ✅ Always send cookies/session
+    headers: {
+      "Content-Type": "application/json",
+      ...(options.headers || {}),
+    },
+  });
+}
+
 function buildQuery(params) {
   const qs = new URLSearchParams();
   for (const [k, v] of Object.entries(params)) {
@@ -13,7 +31,10 @@ function buildQuery(params) {
 }
 
 async function requestJson(url) {
-  const res = await fetch(url, { headers: { Accept: "application/json" } });
+  const res = await fetch(url, { 
+    headers: { Accept: "application/json" },
+    credentials: "include", // ✅ Ensure credentials for all requests
+  });
   const data = await res.json().catch(() => null);
 
   if (!res.ok) {
@@ -33,8 +54,17 @@ export async function fetchProperties(params = {}) {
   });
   const queryString = qs.toString();
   const url = `/api/properties${queryString ? `?${queryString}` : ""}`;
+  
+  // 🔍 DEBUG: log request URL
+  console.log("[fetchProperties] URL:", url);
+  
   const r = await fetch(url, { credentials: "include" });
-  return r.json();
+  const json = await r.json();
+  
+  // 🔍 DEBUG: log response
+  console.log("[fetchProperties] Response count:", json?.count, "data length:", json?.data?.length);
+  
+  return json;
 }
 
 /**

@@ -25,7 +25,8 @@ router.get("/", async (req, res) => {
 router.post("/", async (req, res) => {
   try {
     const userId = req.user._id;
-    const { propertyId, title, city, imageUrl } = req.body;
+    const body = req.body || {};
+    const { propertyId, title, city, imageUrl } = body;
 
     if (!propertyId) {
       return res.status(400).json({ 

@@ -103,6 +103,12 @@ function renderFavorites(favorites) {
       
       const success = await removeFavorite(fav.propertyId);
       if (success) {
+        // ✅ עדכן version כדי להודיע לכל הדפים על השינוי
+        try {
+          const v = Number(localStorage.getItem("favorites_version") || "0") + 1;
+          localStorage.setItem("favorites_version", String(v));
+        } catch {}
+        
         await applyAndRender();
       } else {
         alert("שגיאה בהסרת המועדף");

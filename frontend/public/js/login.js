@@ -70,7 +70,7 @@ form.addEventListener("submit", async (e) => {
     // Success - redirect to portfolio
     showMessage("Login successful! Redirecting...", false);
     setTimeout(() => {
-      window.location.href = "/portfolio.html";
+      window.location.href = "/index.html";
     }, 500);
   } catch (error) {
     console.error("Login error:", error);

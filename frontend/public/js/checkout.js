@@ -162,9 +162,9 @@ qs("payBtn").onclick = async () => {
   qs("successBox").style.display = "block";
   qs("payBtn").disabled = true;
 
-  // optional: after 1.2s go back to property (no async tools; just UI)
+  // ✅ After successful payment, use replace instead of href to prevent back button from returning to checkout
   setTimeout(() => {
-    window.location.href = `property.html?id=${encodeURIComponent(propertyId)}`;
+    window.location.replace(`property.html?id=${encodeURIComponent(propertyId)}`);
   }, 1200);
 };
 

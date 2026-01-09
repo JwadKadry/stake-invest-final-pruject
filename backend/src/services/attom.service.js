@@ -23,10 +23,16 @@ async function attomFetch(path, params = {}) {
   const qs = toQuery(params);
   const url = `${BASE}${path}${qs ? `?${qs}` : ""}`;
 
+  // 🔍 DEBUG: full ATTOM request URL
+  console.log("[ATTOM FETCH] URL:", url);
+
   const cacheKey = url;
   const now = Date.now();
   const hit = cache.get(cacheKey);
-  if (hit && hit.exp > now) return hit.data;
+  if (hit && hit.exp > now) {
+    console.log("[ATTOM FETCH] Cache HIT");
+    return hit.data;
+  }
 
   const res = await fetch(url, {
     headers: {
@@ -41,6 +47,13 @@ async function attomFetch(path, params = {}) {
     data = JSON.parse(text);
   } catch {
     data = { raw: text };
+  }
+
+  // 🔍 DEBUG: raw ATTOM response (first property only to avoid huge logs)
+  if (data?.property?.[0]) {
+    console.log("[ATTOM FETCH] RESPONSE property[0]:", JSON.stringify(data.property[0], null, 2));
+  } else {
+    console.log("[ATTOM FETCH] RESPONSE (no property array):", JSON.stringify(data, null, 2).slice(0, 1000));
   }
 
   if (!res.ok) {
@@ -65,6 +78,15 @@ async function getPropertyDetail(address1, address2) {
     address1,
     address2,
   });
+}
+
+/**
+ * Get property detail by ATTOM ID
+ * @param {string} attomId - ATTOM property ID
+ * @returns {Promise<Object>} ATTOM property detail data
+ */
+async function getPropertyDetailById(attomId) {
+  return attomFetch("/property/detail", { id: attomId });
 }
 
 /**
@@ -121,4 +143,4 @@ async function searchByCity(city, page = 1, pagesize = 12) {
   });
 }
 
-module.exports = { attomFetch, getPropertyDetail, searchByCity };
+module.exports = { attomFetch, getPropertyDetail, getPropertyDetailById, searchByCity };

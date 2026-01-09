@@ -14,15 +14,17 @@ const InvestmentSchema = new mongoose.Schema(
     propertyImageUrl: { type: String, default: "" },
     targetAmount: { type: Number, default: 0 },
 
-    amount: { type: Number, required: true },
-    fee: { type: Number, default: 0 },
-    total: { type: Number, default: 0 },
+    amount: { type: Number, required: true }, // נטו לנכס
+    fee: { type: Number, default: 0 }, // עמלה
+    total: { type: Number, default: 0 }, // תאימות לאחור - totalCharged
+    totalCharged: { type: Number, default: 0 }, // מה שהמשתמש שילם בפועל = amount + fee
     paymentMethod: { type: String, default: "card" },
 
-    status: { type: String, enum: ["ACTIVE", "CANCELED"], default: "ACTIVE" },
+    status: { type: String, enum: ["ACTIVE", "CANCEL_REQUESTED", "CANCELED"], default: "ACTIVE" },
     refundAmount: { type: Number, default: 0 },
     retainedFee: { type: Number, default: 0 },
     canceledAt: { type: Date },
+    paidAt: { type: Date }, // Payment confirmation timestamp
   },
   { timestamps: true }
 );

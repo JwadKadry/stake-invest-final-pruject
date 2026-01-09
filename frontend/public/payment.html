@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Stake • תשלום</title>
+  <link rel="stylesheet" href="./css/styles.css" />
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #f9fafb;
+      padding: 20px;
+    }
+    .payment-wrap {
+      max-width: 600px;
+      margin: 0 auto;
+      background: #fff;
+      border-radius: 16px;
+      padding: 32px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+    .back-link {
+      display: inline-block;
+      margin-bottom: 20px;
+      color: #3b82f6;
+      text-decoration: none;
+      font-size: 14px;
+    }
+    .back-link:hover {
+      text-decoration: underline;
+    }
+    h1 {
+      margin: 0 0 24px;
+      font-size: 24px;
+      font-weight: 700;
+    }
+    .payment-methods {
+      margin: 24px 0;
+    }
+    .payment-method {
+      display: flex;
+      align-items: center;
+      padding: 16px;
+      border: 2px solid #e5e7eb;
+      border-radius: 12px;
+      margin-bottom: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .payment-method:hover {
+      border-color: #3b82f6;
+      background: #f0f9ff;
+    }
+    .payment-method.selected {
+      border-color: #3b82f6;
+      background: #eff6ff;
+    }
+    .payment-method input {
+      margin-left: 12px;
+    }
+    .payment-method label {
+      margin-right: 12px;
+      cursor: pointer;
+      flex: 1;
+    }
+    .summary {
+      background: #f9fafb;
+      padding: 20px;
+      border-radius: 12px;
+      margin: 24px 0;
+    }
+    .summary-row {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+    .summary-row.total {
+      font-weight: 700;
+      font-size: 18px;
+      border-top: 2px solid #e5e7eb;
+      padding-top: 12px;
+      margin-top: 12px;
+    }
+    .pay-btn {
+      width: 100%;
+      padding: 16px;
+      background: #3b82f6;
+      color: #fff;
+      border: none;
+      border-radius: 12px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 24px;
+    }
+    .pay-btn:hover {
+      background: #2563eb;
+    }
+    .pay-btn:disabled {
+      background: #9ca3af;
+      cursor: not-allowed;
+    }
+  </style>
+</head>
+<body>
+  <div class="payment-wrap">
+    <a href="#" class="back-link" id="backBtn">← חזרה</a>
+    <h1>תשלום</h1>
+
+    <div id="error" style="display:none;color:#b91c1c;margin:10px 0;padding:12px;background:#fee2e2;border-radius:8px;"></div>
+
+    <div class="payment-methods">
+      <div class="payment-method selected" data-method="card">
+        <input type="radio" name="paymentMethod" id="card" value="card" checked />
+        <label for="card">💳 כרטיס אשראי</label>
+      </div>
+      <div class="payment-method" data-method="bank">
+        <input type="radio" name="paymentMethod" id="bank" value="bank" />
+        <label for="bank">🏦 העברה בנקאית</label>
+      </div>
+    </div>
+
+    <div class="summary" id="summary">
+      <div class="summary-row">
+        <span>סכום השקעה:</span>
+        <span id="amount">—</span>
+      </div>
+      <div class="summary-row">
+        <span>עמלה (1%):</span>
+        <span id="fee">—</span>
+      </div>
+      <div class="summary-row total">
+        <span>סה״כ לתשלום:</span>
+        <span id="total">—</span>
+      </div>
+    </div>
+
+    <button class="pay-btn" id="payBtn">אשר תשלום</button>
+  </div>
+
+  <script type="module" src="./js/payment.js"></script>
+</body>
+</html>
+

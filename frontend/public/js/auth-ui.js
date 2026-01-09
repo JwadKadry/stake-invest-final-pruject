@@ -1,13 +1,24 @@
 // frontend/public/js/auth-ui.js
-export async function getMe() {
+// ✅ Central function to fetch current user from server (source of truth)
+export async function fetchMe() {
   try {
-    const res = await fetch("/api/auth/me", { credentials: "include" });
-    if (!res.ok) return null;
-    const data = await res.json();
-    return data?.user ?? null;
+    const r = await fetch("/api/auth/me", { credentials: "include" });
+    if (!r.ok) return null;
+    const data = await r.json();
+    
+    // ✅ Handle both old format (status/user) and new format (loggedIn/user)
+    if (data.loggedIn === false) return null;
+    if (data.loggedIn === true && data.user) return data.user;
+    if (data.status === "OK" && data.user) return data.user; // Backward compatibility
+    return null;
   } catch {
     return null;
   }
+}
+
+// Alias for backward compatibility
+export async function getMe() {
+  return fetchMe();
 }
 
 export async function logout() {
@@ -19,8 +30,20 @@ export async function logout() {
 }
 
 // מעדכן את הניווט (מסתיר Login/Register ומציג Logout כשמחוברים)
+// ✅ Syncs UI with server session state (not localStorage)
 export async function updateAuthNav() {
-  const user = await getMe();
+  const user = await fetchMe();
+  
+  // ✅ Clear any localStorage auth state if server says not logged in
+  if (!user) {
+    try {
+      localStorage.removeItem("user");
+      localStorage.removeItem("isLoggedIn");
+      localStorage.removeItem("userId");
+    } catch (e) {
+      // Ignore localStorage errors
+    }
+  }
 
   const loginLink = document.querySelector('[data-nav="login"]');
   const registerLink = document.querySelector('[data-nav="register"]');

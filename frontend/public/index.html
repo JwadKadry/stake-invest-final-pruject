@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Properties</title>
+  <title>Stake • משקיעים בנדל״ן – ביחד</title>
   <link rel="stylesheet" href="./css/styles.css" />
 </head>
 <body>
@@ -66,34 +66,86 @@
 
     <!-- Main -->
     <main class="content">
-      <header class="topbar">
-        <div class="page-title">
-          <h1>Properties</h1>
-          <p class="subtitle">חיפוש פרויקטים ופרטי הגרלות לפי עיר/סוג</p>
-        </div>
+      <!-- Hero Section -->
+      <header class="hero">
+        <div class="hero__overlay"></div>
 
-        <div class="top-actions">
-          <button class="ghost-btn" type="button">Learn more</button>
-          <button class="primary-btn" type="button">Complete onboarding</button>
+        <nav class="hero-topbar">
+          <div class="hero-brand">Stake Real Estate</div>
+          <div class="hero-topbar__links">
+            <a href="./portfolio.html">Portfolio</a>
+            <a href="./favorites.html">Favorites</a>
+            <a href="./login.html" data-nav="login">Login</a>
+            <a href="#" data-nav="logout" style="display:none">Logout</a>
+          </div>
+        </nav>
+
+        <div class="hero__content">
+          <h1>משקיעים בנדל״ן – ביחד</h1>
+          <p class="hero-subtitle">השקעה חברתית בנכסי נדל״ן מניבים.<br>קונים נכס יחד, משכירים אותו, ומתחלקים בהכנסה – לפי הסכום שכל אחד השקיע.</p>
+          <p class="hero-small">אין צורך לקנות דירה לבד. אין צורך לנהל נכס.<br>כל ההשקעה – במקום אחד, בצורה שקופה ופשוטה.</p>
+
+          <div class="hero-tabs" role="tablist" aria-label="סוג השקעה">
+            <button class="hero-tab is-active" data-mode="buy" role="tab" aria-selected="true">השקעה</button>
+            <button class="hero-tab" data-mode="rent" role="tab" aria-selected="false">שכירות</button>
+            <button class="hero-tab" data-mode="sell" role="tab" aria-selected="false">מכירה</button>
+          </div>
+
+          <!-- Search Bar -->
+          <form id="filtersForm" class="searchbar">
+            <!-- City Search with Autocomplete -->
+            <div class="city-search">
+              <input
+                id="cityInput"
+                name="city"
+                type="search"
+                placeholder="City (e.g., Tel Aviv)"
+                autocomplete="off"
+                required
+              />
+              <div id="cityDropdown" class="dropdown hidden"></div>
+            </div>
+
+            <input id="address1" name="address1" type="search" placeholder="Address (optional)" />
+            
+            <!-- Property Type Filter -->
+            <select id="typeFilter" class="search-select" name="type" title="Property Type" aria-label="Property Type">
+              <option value="ALL">All Types</option>
+              <option value="RESIDENTIAL">Residential</option>
+              <option value="COMMERCIAL">Commercial</option>
+              <option value="RENTAL">Rental</option>
+            </select>
+            
+            <button id="btnSearch" class="searchBtn" type="submit" aria-label="Search">🔍 Search</button>
+          </form>
         </div>
       </header>
 
-      <!-- Tabs like Stake -->
-      <section class="tabs">
-        <button class="tab active" type="button" data-tab="available">Available</button>
-        <button class="tab" type="button" data-tab="funded">Funded</button>
-        <button class="tab" type="button" data-tab="exited">Exited</button>
+      <!-- How it works -->
+      <section class="how-it-works">
+        <h3>איך זה עובד?</h3>
+        <div class="steps">
+          <div class="step">
+            <span class="step-num">1</span>
+            <span class="step-text">בוחרים נכס</span>
+          </div>
+          <div class="step">
+            <span class="step-num">2</span>
+            <span class="step-text">משקיעים סכום שמתאים לכם</span>
+          </div>
+          <div class="step">
+            <span class="step-num">3</span>
+            <span class="step-text">מקבלים חלק יחסי מההכנסה</span>
+          </div>
+        </div>
       </section>
 
-      <!-- Filters -->
-      <form id="filtersForm" class="filters">
-        <div class="filters-row">
-          <input id="address1" name="address1" type="text" placeholder="Address 1 (e.g., 4529 Winona Court)" required />
-          <input id="address2" name="address2" type="text" placeholder="City (e.g., Denver)" required />
-          <button id="btnSearch" class="primary-btn" type="submit">Search</button>
-          <button id="resetBtn" class="ghost-btn" type="button">Reset</button>
-        </div>
-      </form>
+      <!-- Property Status Tabs -->
+      <section class="property-tabs">
+        <button class="property-tab active" type="button" data-tab="available">זמינים להשקעה</button>
+        <button class="property-tab" type="button" data-tab="funded">מומנו במלואם</button>
+        <button class="property-tab" type="button" data-tab="pending">טרם יוצאים</button>
+      </section>
 
       <!-- Status -->
       <section id="status" class="status">
@@ -105,24 +157,87 @@
 
       <!-- Results -->
       <section id="results" class="cards"></section>
+      
+      <!-- Pagination -->
+      <div id="pagination" class="pagination"></div>
+      
+      <!-- Reset button (hidden, can be shown if needed) -->
+      <button id="resetBtn" style="display:none">Reset</button>
+      
+      <!-- Why invest section -->
+      <section class="why-invest">
+        <h3>למה השקעה חברתית בנדל״ן?</h3>
+        <div class="benefits">
+          <div class="benefit">✔ לא צריך הון עצמי גבוה</div>
+          <div class="benefit">✔ לא מתעסקים בניהול הנכס</div>
+          <div class="benefit">✔ פיזור סיכון בין משקיעים</div>
+          <div class="benefit">✔ שקיפות מלאה בכל שלב</div>
+          <div class="benefit">✔ אפשר להתחיל בסכום קטן</div>
+        </div>
+      </section>
     </main>
   </div>
+  
+  <!-- Footer -->
+  <footer class="site-footer">
+    <p class="footer-tagline">נדל״ן הוא לא רק למי שיש מיליון –<br>הוא למי שמשקיע חכם, ביחד עם אחרים.</p>
+    <p class="footer-copy">© 2026 Stake Real Estate. כל הזכויות שמורות.</p>
+  </footer>
 
-  <script type="module" src="./js/main.js"></script>
   <script type="module">
     import { updateAuthNav, logout } from "/js/auth-ui.js";
 
+    // Update auth navigation
     const user = await updateAuthNav();
+    
+    // Update hero nav based on auth state
+    const heroLoginLink = document.querySelector('.hero-topbar__links [data-nav="login"]');
+    const heroLogoutLink = document.querySelector('.hero-topbar__links [data-nav="logout"]');
+    
+    if (user) {
+      if (heroLoginLink) heroLoginLink.style.display = 'none';
+      if (heroLogoutLink) {
+        heroLogoutLink.style.display = 'inline';
+        heroLogoutLink.textContent = `Logout (${user.email || user.name || 'User'})`;
+      }
+    } else {
+      if (heroLoginLink) heroLoginLink.style.display = 'inline';
+      if (heroLogoutLink) heroLogoutLink.style.display = 'none';
+    }
 
-    const logoutLink = document.querySelector('[data-nav="logout"]');
-    if (logoutLink) {
-      logoutLink.addEventListener("click", async (e) => {
+    // Logout handler
+    const logoutLinks = document.querySelectorAll('[data-nav="logout"]');
+    logoutLinks.forEach(link => {
+      link.addEventListener("click", async (e) => {
         e.preventDefault();
         await logout();
         await updateAuthNav();
         window.location.href = "/index.html";
       });
-    }
+    });
+    
+    // Hero Tabs (Buy/Rent/Sell)
+    let searchMode = "buy";
+    const heroTabs = document.querySelectorAll(".hero-tab");
+    heroTabs.forEach(btn => {
+      btn.addEventListener("click", () => {
+        heroTabs.forEach(b => {
+          b.classList.remove("is-active");
+          b.setAttribute("aria-selected", "false");
+        });
+        btn.classList.add("is-active");
+        btn.setAttribute("aria-selected", "true");
+        searchMode = btn.dataset.mode;
+        console.log("Search mode:", searchMode);
+      });
+    });
+    
   </script>
+  
+  <!-- City Autocomplete -->
+  <script src="./js/cities-autocomplete.js"></script>
+  
+  <!-- Main App Script (must load after cities-autocomplete) -->
+  <script type="module" src="./js/main.js"></script>
 </body>
 </html>

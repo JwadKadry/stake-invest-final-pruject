@@ -30,20 +30,30 @@
       <div class="panel">
         <div class="panel-body">
           <div class="kpis">
-            <div class="kpi"><small>עיר</small><div id="city"></div></div>
-            <div class="kpi"><small>סוג</small><div id="type"></div></div>
-            <div class="kpi"><small>סטטוס</small><div id="status"></div></div>
-            <div class="kpi"><small>מחיר למ״ר</small><div id="price"></div></div>
+            <div class="kpi"><small>עיר</small><div id="city">—</div></div>
+            <div class="kpi"><small>סוג</small><div id="type">—</div></div>
+            <div class="kpi" id="bedsRow"><small>חדרים</small><div id="bedrooms">—</div></div>
+            <div class="kpi" id="bathsRow"><small>חדרי רחצה</small><div id="bathrooms">—</div></div>
+            <div class="kpi" id="areaRow"><small>שטח</small><div id="area">—</div></div>
+            <div class="kpi"><small>שנת בנייה</small><div id="yearBuilt">—</div></div>
+            <div class="kpi"><small>מחיר</small><div id="price">—</div></div>
+          </div>
+          
+          <!-- Building notice for Multi-Unit properties -->
+          <div id="buildingNotice" class="building-notice" style="display:none">
+            <span class="notice-icon">🏢</span>
+            <span>נכס ברמת בניין (מספר יחידות)</span>
           </div>
 
           <div class="actions">
-            <button class="primary" id="investBtn" type="button">Invest</button>
-            <button class="ghost" id="shareBtn">Share</button>
-            <button class="ghost" id="favoriteBtn" type="button" title="Add to favorites" style="font-size:20px;padding:8px 12px">★</button>
+            <button class="primary" id="investBtn" type="button">השקע עכשיו</button>
+            <button class="ghost" id="shareBtn">שתף</button>
+            <button class="ghost" id="favoriteBtn" type="button" title="הוסף למועדפים" style="font-size:20px;padding:8px 12px">★</button>
           </div>
 
-          <p style="opacity:.65;margin-top:12px;font-size:13px">
-            *Demo UI (Stake-style) — אין ביצוע השקעה אמיתי.
+          <p class="invest-disclaimer">
+            ההשקעה מתבצעת כחלק מקבוצת משקיעים.<br>
+            הנתונים המוצגים הם הערכות ואינם התחייבות לתשואה.
           </p>
         </div>
       </div>
@@ -61,6 +71,57 @@
 
           <div class="muted" id="fundedMeta" style="margin-top:8px">
             0 ₪ מתוך 0 ₪
+          </div>
+
+          <div class="remaining-invest" style="margin-top:12px;padding-top:12px;border-top:1px solid #eef2f7">
+            <div style="color:#6b7280;font-size:13px;margin-bottom:4px">נותרו להשקעה עד 100%:</div>
+            <strong id="remainingAmount" style="font-size:16px;color:#059669">0 ₪</strong>
+          </div>
+        </div>
+      </div>
+      
+      <!-- How Investment Works -->
+      <div class="panel invest-explain" style="margin-top:14px">
+        <div class="panel-body">
+          <h3 style="margin:0 0 14px">איך ההשקעה בנכס הזה עובדת?</h3>
+          <p class="explain-text">
+            הנכס נרכש על ידי קבוצת משקיעים.<br>
+            כל משקיע מקבל חלק יחסי בבעלות על הנכס בהתאם לסכום שהשקיע.<br>
+            הנכס מושכר, וההכנסות מחולקות בין המשקיעים באופן יחסי.
+          </p>
+          
+          <h4 style="margin:18px 0 12px;color:var(--text)">📊 דוגמה לחלוקת רווחים</h4>
+          <div class="example-grid">
+            <div class="example-item"><small>מחיר הנכס</small><div>1,200,000 ₪</div></div>
+            <div class="example-item"><small>סך כל המשקיעים</small><div>120</div></div>
+            <div class="example-item"><small>סכום ההשקעה שלך</small><div>10,000 ₪</div></div>
+            <div class="example-item"><small>החלק שלך בנכס</small><div>0.83%</div></div>
+            <div class="example-item"><small>הכנסה חודשית משכירות</small><div>6,000 ₪</div></div>
+            <div class="example-item highlight"><small>ההכנסה החודשית שלך</small><div>≈ 50 ₪</div></div>
+          </div>
+          <p class="explain-note">💡 ההכנסה מחולקת לפי אחוז ההשקעה – בלי קשר למספר המשקיעים.</p>
+        </div>
+      </div>
+      
+      <!-- Investment Strategy -->
+      <div class="panel" style="margin-top:14px">
+        <div class="panel-body">
+          <h3 style="margin:0 0 14px">אסטרטגיית ההשקעה</h3>
+          <div class="strategy-grid">
+            <div class="strategy-item">
+              <span class="strategy-icon">🟢</span>
+              <div>
+                <strong>Income (הכנסה שוטפת)</strong>
+                <p>הכנסה חודשית משכירות לאורך זמן.</p>
+              </div>
+            </div>
+            <div class="strategy-item">
+              <span class="strategy-icon">🔵</span>
+              <div>
+                <strong>Capital Growth (עליית ערך)</strong>
+                <p>רווח ממכירת הנכס בעתיד במחיר גבוה יותר.</p>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -108,19 +169,19 @@
           <div class="modal-title">השקעה בנכס</div>
           <div class="modal-sub" id="investPropName">—</div>
         </div>
-        <button type="button" class="icon-x" value="cancel" aria-label="סגירה">✕</button>
+        <button id="investmentModalClose" type="button" class="icon-x" value="cancel" aria-label="סגירה">✕</button>
       </div>
 
       <div class="modal-body">
         <label class="field">
           <span>סכום השקעה (₪)</span>
-          <input id="investAmount" type="number" inputmode="numeric" min="250" step="50" placeholder="לדוגמה: 1000" required />
-          <small>מינימום ₪250 · צעדים של ₪50 (דמו)</small>
+          <input id="investAmount" type="number" inputmode="numeric" min="2000" step="1" placeholder="הכנס סכום: 2000" required />
+          <small>מינימום ₪2,000 · צעדים של ₪50 (דמו) · ניתן לסגור נכס גם אם לא כפולה של 50</small>
         </label>
 
         <label class="field" style="margin-top:10px">
           <span>בחר סכום (Slider)</span>
-          <input id="investRange" type="range" min="250" max="20000" step="50" value="1000" />
+          <input id="investRange" type="range" min="2000" max="2000000" step="1" value="2000" />
           <small id="rangeHint">₪1,000</small>
         </label>
 
@@ -151,12 +212,17 @@
       </div>
 
       <div class="modal-foot">
-        <button class="ghost" value="cancel">ביטול</button>
+        <button id="investmentCancelBtn" type="button" class="ghost" value="cancel">ביטול</button>
         <button class="primary" id="confirmInvestBtn" value="default">אישור השקעה</button>
       </div>
     </form>
   </dialog>
 
+  <script type="module">
+    // ✅ Sync auth state from server (not localStorage)
+    import { updateAuthNav } from "./js/auth-ui.js";
+    await updateAuthNav();
+  </script>
   <script type="module" src="./js/property.js"></script>
 </body>
 </html>

@@ -40,17 +40,45 @@ router.post("/register", async (req, res) => {
       name: name || ""
     });
 
-    // Set session
-    req.session.userId = user._id;
+    // ✅ Regenerate session (best practice against session fixation)
+    req.session.regenerate((err) => {
+      if (err) {
+        console.error("Session regenerate error:", err);
+        return res.status(500).json({ 
+          status: "ERROR", 
+          message: "Session error" 
+        });
+      }
 
-    // Return user data (without password)
-    res.status(201).json({ 
-      status: "OK", 
-      user: { 
-        id: user._id, 
-        email: user.email, 
-        name: user.name || "" 
-      } 
+      // ✅ Set session userId (source of truth for authentication)
+      req.session.userId = user._id.toString();
+
+      // ✅ Save session before responding (ensures cookie is set)
+      // Use Promise wrapper since req.session.save() is callback-based
+      new Promise((resolve, reject) => {
+        req.session.save((saveErr) => {
+          if (saveErr) reject(saveErr);
+          else resolve();
+        });
+      })
+      .then(() => {
+        // Return user data (without password)
+        return res.status(201).json({ 
+          status: "OK", 
+          user: { 
+            id: user._id, 
+            email: user.email, 
+            name: user.name || "" 
+          } 
+        });
+      })
+      .catch((saveErr) => {
+        console.error("Session save error:", saveErr);
+        return res.status(500).json({ 
+          status: "ERROR", 
+          message: "Session save failed" 
+        });
+      });
     });
   } catch (e) {
     console.error("Register error:", e);
@@ -92,17 +120,45 @@ router.post("/login", async (req, res) => {
       });
     }
 
-    // Set session
-    req.session.userId = user._id;
+    // ✅ Regenerate session (best practice against session fixation)
+    req.session.regenerate((err) => {
+      if (err) {
+        console.error("Session regenerate error:", err);
+        return res.status(500).json({ 
+          status: "ERROR", 
+          message: "Session error" 
+        });
+      }
 
-    // Return user data (without password)
-    res.json({ 
-      status: "OK", 
-      user: { 
-        id: user._id, 
-        email: user.email, 
-        name: user.name || "" 
-      } 
+      // ✅ Set session userId (source of truth for authentication)
+      req.session.userId = user._id.toString();
+
+      // ✅ Save session before responding (ensures cookie is set)
+      // Use Promise wrapper since req.session.save() is callback-based
+      new Promise((resolve, reject) => {
+        req.session.save((saveErr) => {
+          if (saveErr) reject(saveErr);
+          else resolve();
+        });
+      })
+      .then(() => {
+        // Return user data (without password)
+        return res.json({ 
+          status: "OK", 
+          user: { 
+            id: user._id, 
+            email: user.email, 
+            name: user.name || "" 
+          } 
+        });
+      })
+      .catch((saveErr) => {
+        console.error("Session save error:", saveErr);
+        return res.status(500).json({ 
+          status: "ERROR", 
+          message: "Session save failed" 
+        });
+      });
     });
   } catch (e) {
     console.error("Login error:", e);
@@ -110,13 +166,13 @@ router.post("/login", async (req, res) => {
   }
 });
 
-// GET /api/auth/me
+// GET /api/auth/me - Returns current user session status
 router.get("/me", async (req, res) => {
   try {
     if (!req.session.userId) {
-      return res.status(401).json({ 
-        status: "ERROR", 
-        message: "Not logged in" 
+      return res.status(200).json({ 
+        loggedIn: false,
+        user: null
       });
     }
 
@@ -124,14 +180,15 @@ router.get("/me", async (req, res) => {
     if (!user) {
       // Session has invalid userId, clear it
       req.session.destroy(() => {});
-      return res.status(401).json({ 
-        status: "ERROR", 
-        message: "Not logged in" 
+      return res.status(200).json({ 
+        loggedIn: false,
+        user: null
       });
     }
 
+    // ✅ Return consistent format with loggedIn flag
     res.json({ 
-      status: "OK", 
+      loggedIn: true,
       user: { 
         id: user._id, 
         email: user.email, 
@@ -146,6 +203,13 @@ router.get("/me", async (req, res) => {
 
 // POST /api/auth/logout
 router.post("/logout", (req, res) => {
+  // ✅ Clear session cookie explicitly (use the custom name from app.js)
+  res.clearCookie("stake.sid", {
+    path: "/",
+    httpOnly: true,
+    sameSite: "lax",
+  });
+  
   req.session.destroy((err) => {
     if (err) {
       console.error("Logout error:", err);
