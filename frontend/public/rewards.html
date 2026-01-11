@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Rewards • Stake Real Estate</title>
+  <link rel="stylesheet" href="./css/styles.css" />
+  <style>
+    body{font-family:system-ui,Arial; background:#f6f7fb; margin:0; padding:20px;}
+    .wrap{max-width:1100px; margin:32px auto; padding:0 16px;}
+    h1{margin:0 0 18px;}
+    .grid{display:grid; gap:16px; grid-template-columns:repeat(12,1fr);}
+    .card{background:#fff; border:1px solid #e9e9ef; border-radius:14px; padding:16px;}
+    .span6{grid-column:span 6;} .span4{grid-column:span 4;} .span8{grid-column:span 8;} .span12{grid-column:span 12;}
+    @media (max-width:900px){ .span6,.span4,.span8{grid-column:span 12;} }
+    .muted{color:#6b7280; font-size:14px}
+    .big{font-size:40px; font-weight:800; margin:8px 0}
+    .row{display:flex; justify-content:space-between; gap:10px; padding:10px 0; border-bottom:1px solid #f0f0f5;}
+    .row:last-child{border-bottom:0}
+    .pill{display:inline-block; padding:6px 10px; border-radius:999px; background:#eef2ff; font-size:13px}
+    .bar{height:10px; background:#eef0f6; border-radius:999px; overflow:hidden;}
+    .bar > div{height:100%; width:0%; background:#22c55e; transition:width 0.3s;}
+    .actions{display:flex; gap:10px; flex-wrap:wrap; margin-top:10px;}
+    button{cursor:pointer; border:1px solid #e5e7eb; background:#fff; padding:10px 12px; border-radius:10px; font-weight:700;}
+    button.primary{background:#111827; color:#fff; border-color:#111827;}
+    button:hover{background:#f9fafb;}
+    button.primary:hover{background:#1f2937;}
+    input{width:100%; padding:12px; border:1px solid #e5e7eb; border-radius:10px; font-size:14px; box-sizing:border-box;}
+    .msg{margin-top:10px; font-size:14px;}
+    .err{color:#b91c1c;} .ok{color:#15803d;}
+  </style>
+</head>
+
+<body>
+  <div class="wrap">
+    <h1>Rewards</h1>
+    <div class="grid">
+      <div class="card span8">
+        <div class="muted">סה״כ תגמולים שנצברו</div>
+        <div class="big" id="totalRewards">—</div>
+        <div class="muted">* דמו: מחושב לפי Cashback על השקעות ב־12 חודשים אחרונים</div>
+      </div>
+
+      <div class="card span4">
+        <div class="muted">פירוט</div>
+        <div class="row"><div>Cashback</div><b id="cashback">—</b></div>
+        <div class="row"><div>Referrals</div><b id="referrals">—</b></div>
+        <div class="row"><div>Promotions</div><b id="promotions">—</b></div>
+      </div>
+
+      <div class="card span6">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;">
+          <div>
+            <div class="muted">Tier</div>
+            <div class="pill" id="tierPill">—</div>
+          </div>
+          <div class="muted" id="invested12m">—</div>
+        </div>
+
+        <div style="margin-top:12px" class="bar"><div id="progressFill"></div></div>
+        <div class="muted" style="margin-top:10px" id="progressText">—</div>
+      </div>
+
+      <div class="card span6">
+        <div class="muted">Refer and earn</div>
+        <div style="margin-top:10px">
+          <input id="refLink" readonly value="טוען..." />
+        </div>
+        <div class="actions">
+          <button class="primary" id="btnCopy">העתק קישור</button>
+          <button id="btnShare" style="display:none;">שתף</button>
+        </div>
+        <div class="msg" id="copyMsg"></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="./js/rewards.js"></script>
+</body>
+</html>
+

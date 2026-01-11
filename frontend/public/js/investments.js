@@ -229,7 +229,11 @@ function renderRecentActivity(recent) {
 
     const date = new Date(inv.createdAt || Date.now()).toLocaleString("he-IL");
     const propertyName = inv.propertyTitle || `Property • ${inv.propertyId || "unknown"}`;
-    const statusText = inv.status === "CANCELED" ? "בוטל" : "פעיל";
+    const status = inv.status || "ACTIVE";
+    const statusText = 
+      status === "CANCELED" ? "בוטל" :
+      status === "CANCEL_REQUESTED" ? "ממתין לאישור מנהל" :
+      "פעיל";
     
     // Build property cell with title and optional city
     let propertyCell = propertyName;
@@ -237,16 +241,61 @@ function renderRecentActivity(recent) {
       propertyCell = `${propertyName}<br><small style="color:#6b7280">${inv.propertyCity}</small>`;
     }
 
+    // Actions column - show cancel request button only for ACTIVE investments
+    let actionsCell = "";
+    if (status === "ACTIVE" && inv._id) {
+      actionsCell = `
+        <td style="padding:12px 8px">
+          <button onclick="requestCancel('${inv._id}')" style="padding:6px 12px;background:#dc2626;color:white;border:none;border-radius:6px;cursor:pointer;font-size:13px">
+            בקשת ביטול
+          </button>
+        </td>
+      `;
+    } else {
+      actionsCell = `<td style="padding:12px 8px">—</td>`;
+    }
+
     tr.innerHTML = `
       <td style="padding:12px 8px">${date}</td>
       <td style="padding:12px 8px">${propertyCell}</td>
       <td style="padding:12px 8px"><strong>${fmtILS(inv.amount)}</strong></td>
       <td style="padding:12px 8px">${statusText}</td>
+      ${actionsCell}
     `;
 
     tbody.appendChild(tr);
   }
 }
+
+// Request cancel function (available globally)
+window.requestCancel = async function(investmentId) {
+  const reason = prompt("סיבת ביטול (אופציונלי):");
+  if (reason === null) return; // User cancelled
+
+  try {
+    const res = await fetch(`/api/investments/${encodeURIComponent(investmentId)}/request-cancel`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ reason: reason || "" }),
+    });
+
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      alert(data?.message || "שגיאה בשליחת בקשה לביטול");
+      return;
+    }
+
+    const data = await res.json().catch(() => ({}));
+    alert(data?.message || "בקשה לביטול נשלחה למנהל");
+    
+    // Reload page to show updated data
+    location.reload();
+  } catch (err) {
+    console.error("Request cancel error:", err);
+    alert("שגיאה בשליחת בקשה לביטול");
+  }
+};
 
 async function applyAndRender() {
   const searchInput = document.getElementById("search");

@@ -391,6 +391,7 @@ router.post("/:id/request-cancel", async (req, res) => {
     }
 
     const { id } = req.params;
+    const { reason } = req.body;
     const investment = await Investment.findOne({ _id: id, userId });
 
     if (!investment) {
@@ -407,6 +408,8 @@ router.post("/:id/request-cancel", async (req, res) => {
 
     // ✅ Change status to CANCEL_REQUESTED (doesn't affect funding, just marks for admin review)
     investment.status = "CANCEL_REQUESTED";
+    investment.cancelReason = reason || "";
+    investment.cancelRequestedAt = new Date();
     await investment.save();
 
     res.json({ 
@@ -705,6 +708,7 @@ router.get("/recent", async (req, res) => {
     const normalized = investments.map(inv => {
       const snapshot = normalizeInvestmentSnapshot(inv);
       return {
+        _id: String(inv._id),
         status: inv.status || "ACTIVE",
         amount: inv.amount || 0,
         createdAt: inv.createdAt,

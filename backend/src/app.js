@@ -11,6 +11,8 @@ const investmentRoutes = require("./routes/investments");
 const favoritesRoutes = require("./routes/favorites");
 const authRoutes = require("./routes/auth");
 const citiesRoutes = require("./routes/citiesRoutes");
+const adminRoutes = require("./routes/adminRoutes");
+const rewardsRoutes = require("./routes/rewardsRoutes");
 const errorHandler = require("./middlewares/errorHandler");
 
 const app = express();
@@ -95,6 +97,8 @@ app.use("/api/properties", propertyRoutes);
 app.use("/api/investments", investmentRoutes);
 app.use("/api/favorites", favoritesRoutes);
 app.use("/api/cities", citiesRoutes);
+app.use("/api/admin", adminRoutes);
+app.use("/api/rewards", rewardsRoutes);
 
 // Errors
 app.use(errorHandler);

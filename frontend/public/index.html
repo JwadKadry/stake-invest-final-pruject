@@ -41,7 +41,7 @@
           <span class="nav-icon">📝</span>
           <span>Register</span>
         </a>
-        <a class="nav-item" href="#">
+        <a class="nav-item" href="rewards.html">
           <span class="nav-icon">🎁</span>
           <span>Rewards</span>
         </a>
@@ -75,6 +75,7 @@
           <div class="hero-topbar__links">
             <a href="./portfolio.html">Portfolio</a>
             <a href="./favorites.html">Favorites</a>
+            <a id="adminLink" href="./admin.html" style="display:none;color:#dc2626;font-weight:600">ADMIN</a>
             <a href="./login.html" data-nav="login">Login</a>
             <a href="#" data-nav="logout" style="display:none">Logout</a>
           </div>
@@ -190,9 +191,24 @@
     // Update auth navigation
     const user = await updateAuthNav();
     
+    // Check if user is admin
+    let isAdmin = false;
+    if (user) {
+      try {
+        const meRes = await fetch("/api/auth/me", { credentials: "include" });
+        if (meRes.ok) {
+          const meData = await meRes.json();
+          isAdmin = meData.isAdmin || false;
+        }
+      } catch (err) {
+        console.error("Error checking admin status:", err);
+      }
+    }
+    
     // Update hero nav based on auth state
     const heroLoginLink = document.querySelector('.hero-topbar__links [data-nav="login"]');
     const heroLogoutLink = document.querySelector('.hero-topbar__links [data-nav="logout"]');
+    const adminLink = document.getElementById("adminLink");
     
     if (user) {
       if (heroLoginLink) heroLoginLink.style.display = 'none';
@@ -200,9 +216,14 @@
         heroLogoutLink.style.display = 'inline';
         heroLogoutLink.textContent = `Logout (${user.email || user.name || 'User'})`;
       }
+      // Show admin link only if user is admin
+      if (adminLink && isAdmin) {
+        adminLink.style.display = 'inline-block';
+      }
     } else {
       if (heroLoginLink) heroLoginLink.style.display = 'inline';
       if (heroLogoutLink) heroLogoutLink.style.display = 'none';
+      if (adminLink) adminLink.style.display = 'none';
     }
 
     // Logout handler

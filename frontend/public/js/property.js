@@ -485,13 +485,15 @@ function renderInvestmentsTable(itemsAll) {
       const id = btn.getAttribute("data-request-cancel");
       if (!id) return;
 
-      const ok = confirm("לבקש ביטול השקעה? הבקשה תישלח למנהל.");
-      if (!ok) return;
+      const reason = prompt("סיבת ביטול (אופציונלי):");
+      if (reason === null) return; // User cancelled
 
       try {
         const resp = await fetch(`/api/investments/${encodeURIComponent(id)}/request-cancel`, {
           method: "POST",
+          headers: { "Content-Type": "application/json" },
           credentials: "include",
+          body: JSON.stringify({ reason: reason || "" }),
         });
         
         if (!resp.ok) {
@@ -499,6 +501,9 @@ function renderInvestmentsTable(itemsAll) {
           alert(data?.message || "שגיאה בשליחת בקשה לביטול");
           return;
         }
+
+        const data = await resp.json().catch(() => ({}));
+        alert(data?.message || "בקשה לביטול נשלחה למנהל");
 
         // Reload investments and re-render
         const propertyId = p?.id || p?.attomId;
@@ -738,12 +743,27 @@ async function initAfterPropertyLoaded() {
   }
 }
 
-// ===== Back Button Handler =====
+// ===== Navigation Buttons Handler =====
 document.addEventListener("DOMContentLoaded", () => {
+  // 🔙 Back Button - Historical navigation (preserves search, filters, pagination, etc.)
   const backBtn = document.getElementById("backBtn") || document.querySelector('[data-action="back"]');
-  if (!backBtn) return;
+  if (backBtn) {
+    backBtn.addEventListener("click", () => {
+      // ✅ Use History API to go back to previous page (preserves search, filters, pagination, etc.)
+      if (window.history.length > 1) {
+        window.history.back();
+      } else {
+        // Fallback if user arrived directly to URL (no history)
+        window.location.href = "/index.html";
+      }
+    });
+  }
 
-  backBtn.addEventListener("click", () => {
-    window.location.href = "/index.html";
-  });
+  // 🏠 Home Button - Direct navigation to homepage
+  const homeBtn = document.getElementById("homeBtn");
+  if (homeBtn) {
+    homeBtn.addEventListener("click", () => {
+      window.location.href = "/index.html";
+    });
+  }
 });

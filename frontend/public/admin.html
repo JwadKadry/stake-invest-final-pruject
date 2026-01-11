@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Admin Panel • Stake Real Estate</title>
+  <link rel="stylesheet" href="./css/styles.css" />
+  <style>
+    body {
+      padding: 20px;
+      font-family: system-ui, -apple-system, sans-serif;
+    }
+    h1 {
+      margin-bottom: 20px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+      background: white;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    thead {
+      background: #f3f4f6;
+    }
+    th {
+      padding: 12px;
+      text-align: right;
+      font-weight: 600;
+      border-bottom: 2px solid #e5e7eb;
+    }
+    td {
+      padding: 12px;
+      border-bottom: 1px solid #e5e7eb;
+    }
+    tbody tr:hover {
+      background: #f9fafb;
+    }
+    .error-message {
+      color: #b91c1c;
+      padding: 20px;
+      text-align: center;
+      background: #fee2e2;
+      border-radius: 8px;
+      margin-top: 20px;
+    }
+    .loading {
+      text-align: center;
+      padding: 40px;
+      color: #6b7280;
+    }
+  </style>
+</head>
+<body>
+  <h1>Admin – השקעות</h1>
+  <div id="loading" class="loading">טוען נתונים...</div>
+  <div id="error" class="error-message" style="display:none"></div>
+  
+  <div style="display:flex;gap:10px;align-items:center;margin:20px 0;flex-wrap:wrap">
+    <input id="userEmailSearch" type="email" placeholder="חפש משתמש לפי אימייל..." style="min-width:280px;padding:10px;border:1px solid #d1d5db;border-radius:8px;font-size:14px" />
+    <button id="btnUserSearch" style="padding:10px 20px;background:#111;color:white;border:none;border-radius:8px;cursor:pointer;font-size:14px">חפש</button>
+    <button id="btnClearSearch" type="button" style="padding:10px 20px;background:#6b7280;color:white;border:none;border-radius:8px;cursor:pointer;font-size:14px">נקה</button>
+  </div>
+
+  <div id="userHistoryBox" style="margin:10px 0;"></div>
+
+  <div id="adminStats" style="display:flex;gap:16px;margin-bottom:16px;flex-wrap:wrap;padding:16px;background:#f9fafb;border-radius:8px;display:none">
+    <div class="stat" style="padding:12px;background:white;border-radius:6px;flex:1;min-width:150px">
+      <div style="color:#6b7280;font-size:14px;margin-bottom:4px">סה״כ השקעות</div>
+      <div style="font-size:20px;font-weight:700;color:#059669" id="sInvested">₪0</div>
+    </div>
+    <div class="stat" style="padding:12px;background:white;border-radius:6px;flex:1;min-width:150px">
+      <div style="color:#6b7280;font-size:14px;margin-bottom:4px">סה״כ עמלות</div>
+      <div style="font-size:20px;font-weight:700;color:#dc2626" id="sFees">₪0</div>
+    </div>
+    <div class="stat" style="padding:12px;background:white;border-radius:6px;flex:1;min-width:150px">
+      <div style="color:#6b7280;font-size:14px;margin-bottom:4px">מספר השקעות</div>
+      <div style="font-size:20px;font-weight:700;color:#2563eb" id="sCount">0</div>
+    </div>
+  </div>
+  
+  <table id="investmentsTable" style="display:none">
+    <thead>
+      <tr>
+        <th>משקיע</th>
+        <th>נכס</th>
+        <th>עיר</th>
+        <th>סכום</th>
+        <th>עמלה</th>
+        <th>סה״כ ששולם</th>
+        <th>סטטוס</th>
+        <th>תאריך</th>
+        <th>פעולות</th>
+      </tr>
+    </thead>
+    <tbody id="rows"></tbody>
+  </table>
+
+  <script src="/js/admin.js"></script>
+</body>
+</html>
+

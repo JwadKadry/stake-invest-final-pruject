@@ -25,6 +25,12 @@ const InvestmentSchema = new mongoose.Schema(
     retainedFee: { type: Number, default: 0 },
     canceledAt: { type: Date },
     paidAt: { type: Date }, // Payment confirmation timestamp
+    
+    // ✅ Cancel request fields
+    cancelReason: { type: String, default: null },
+    cancelRequestedAt: { type: Date, default: null },
+    cancelReviewedAt: { type: Date, default: null },
+    cancelReviewedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User", default: null },
   },
   { timestamps: true }
 );
